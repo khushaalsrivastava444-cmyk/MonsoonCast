@@ -19,19 +19,48 @@ def plot_spatial_rainfall_field(
         sub = df.iloc[:100].copy()
         date = str(sub["time"].iloc[0])[:10]
 
-    fig = px.density_mapbox(
-        sub,
-        lat="lat",
-        lon="lon",
-        z=val_col,
-        radius=25,
-        center=dict(lat=float(sub["lat"].mean()), lon=float(sub["lon"].mean())),
-        zoom=4.5,
-        mapbox_style="open-street-map",
-        title=title or f"Monsoon Rainfall Field ({val_col}) - {date}",
-        color_continuous_scale="Blues",
-        range_color=[0, max(50.0, float(sub[val_col].max()))],
-    )
+    center_lat = float(sub["lat"].mean()) if not sub.empty else 21.5
+    center_lon = float(sub["lon"].mean()) if not sub.empty else 77.5
+    max_val = max(50.0, float(sub[val_col].max())) if not sub.empty else 50.0
+
+    if hasattr(px, "density_map"):
+        fig = px.density_map(
+            sub,
+            lat="lat",
+            lon="lon",
+            z=val_col,
+            radius=25,
+            center=dict(lat=center_lat, lon=center_lon),
+            zoom=4.5,
+            map_style="open-street-map",
+            title=title or f"Monsoon Rainfall Field ({val_col}) - {date}",
+            color_continuous_scale="Blues",
+            range_color=[0, max_val],
+        )
+    elif hasattr(px, "density_mapbox"):
+        fig = px.density_mapbox(
+            sub,
+            lat="lat",
+            lon="lon",
+            z=val_col,
+            radius=25,
+            center=dict(lat=center_lat, lon=center_lon),
+            zoom=4.5,
+            mapbox_style="open-street-map",
+            title=title or f"Monsoon Rainfall Field ({val_col}) - {date}",
+            color_continuous_scale="Blues",
+            range_color=[0, max_val],
+        )
+    else:
+        fig = px.scatter(
+            sub,
+            x="lon",
+            y="lat",
+            color=val_col,
+            size=val_col,
+            title=title or f"Monsoon Rainfall Field ({val_col}) - {date}",
+            color_continuous_scale="Blues",
+        )
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
     return fig
 
@@ -42,20 +71,49 @@ def plot_probability_map(
     title: str = "Predicted Extreme Rainfall Probability",
 ) -> go.Figure:
     """Plot spatial probability field with threshold markings."""
-    fig = px.scatter_mapbox(
-        df,
-        lat="lat",
-        lon="lon",
-        color=prob_col,
-        size=prob_col,
-        color_continuous_scale="Viridis",
-        range_color=[0.0, 1.0],
-        size_max=12,
-        zoom=4.5,
-        center=dict(lat=float(df["lat"].mean()), lon=float(df["lon"].mean())),
-        mapbox_style="open-street-map",
-        title=title,
-    )
+    center_lat = float(df["lat"].mean()) if not df.empty else 21.5
+    center_lon = float(df["lon"].mean()) if not df.empty else 77.5
+
+    if hasattr(px, "scatter_map"):
+        fig = px.scatter_map(
+            df,
+            lat="lat",
+            lon="lon",
+            color=prob_col,
+            size=prob_col,
+            color_continuous_scale="Viridis",
+            range_color=[0.0, 1.0],
+            size_max=12,
+            zoom=4.5,
+            center=dict(lat=center_lat, lon=center_lon),
+            map_style="open-street-map",
+            title=title,
+        )
+    elif hasattr(px, "scatter_mapbox"):
+        fig = px.scatter_mapbox(
+            df,
+            lat="lat",
+            lon="lon",
+            color=prob_col,
+            size=prob_col,
+            color_continuous_scale="Viridis",
+            range_color=[0.0, 1.0],
+            size_max=12,
+            zoom=4.5,
+            center=dict(lat=center_lat, lon=center_lon),
+            mapbox_style="open-street-map",
+            title=title,
+        )
+    else:
+        fig = px.scatter(
+            df,
+            x="lon",
+            y="lat",
+            color=prob_col,
+            size=prob_col,
+            color_continuous_scale="Viridis",
+            title=title,
+        )
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
     return fig
 

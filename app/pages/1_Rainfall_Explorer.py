@@ -99,18 +99,61 @@ with col_style:
 
 df_date = df_year[df_year["time"].dt.strftime("%Y-%m-%d") == date_select]
 
-fig_map = px.density_mapbox(
-    df_date,
-    lat="lat",
-    lon="lon",
-    z="rain_current",
-    radius=30,
-    center=dict(lat=float(df_date["lat"].mean()), lon=float(df_date["lon"].mean())),
-    zoom=5,
-    mapbox_style=basemap_style,
-    title=f"Central India Gridded Rainfall Field on {date_select}",
-    color_continuous_scale="Blues",
-    range_color=[0, max(50.0, float(df_date["rain_current"].max()))],
-)
-fig_map.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
-st.plotly_chart(fig_map, use_container_width=True)
+try:
+    max_val = max(50.0, float(df_date["rain_current"].max())) if not df_date.empty else 50.0
+    center_lat = float(df_date["lat"].mean()) if not df_date["lat"].empty else 21.5
+    center_lon = float(df_date["lon"].mean()) if not df_date["lon"].empty else 77.5
+
+    if hasattr(px, "density_map"):
+        fig_map = px.density_map(
+            df_date,
+            lat="lat",
+            lon="lon",
+            z="rain_current",
+            radius=30,
+            center=dict(lat=center_lat, lon=center_lon),
+            zoom=5,
+            map_style=basemap_style,
+            title=f"Central India Gridded Rainfall Field on {date_select}",
+            color_continuous_scale="Blues",
+            range_color=[0, max_val],
+        )
+    elif hasattr(px, "density_mapbox"):
+        fig_map = px.density_mapbox(
+            df_date,
+            lat="lat",
+            lon="lon",
+            z="rain_current",
+            radius=30,
+            center=dict(lat=center_lat, lon=center_lon),
+            zoom=5,
+            mapbox_style=basemap_style,
+            title=f"Central India Gridded Rainfall Field on {date_select}",
+            color_continuous_scale="Blues",
+            range_color=[0, max_val],
+        )
+    else:
+        fig_map = px.scatter(
+            df_date,
+            x="lon",
+            y="lat",
+            color="rain_current",
+            size="rain_current",
+            title=f"Central India Gridded Rainfall Field on {date_select}",
+            color_continuous_scale="Blues",
+        )
+    fig_map.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
+    st.plotly_chart(fig_map, use_container_width=True)
+except Exception as e:
+    st.warning(f"Map rendering warning: {e}. Falling back to 2D scatter view.")
+    fig_fallback = px.scatter(
+        df_date,
+        x="lon",
+        y="lat",
+        color="rain_current",
+        size="rain_current",
+        title=f"Central India Gridded Rainfall Field on {date_select}",
+        color_continuous_scale="Blues",
+    )
+    fig_fallback.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
+    st.plotly_chart(fig_fallback, use_container_width=True)
