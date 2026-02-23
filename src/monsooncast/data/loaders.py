@@ -126,10 +126,11 @@ def generate_synthetic_monsoon_dataset(
     lons = np.arange(lon_bounds[0], lon_bounds[1] + resolution, resolution)
     n_lat, n_lon = len(lats), len(lons)
 
-    # Generate daily dates for June-September across requested years
+    # Generate daily dates across requested years including pre-monsoon (May) and post-monsoon (October) buffers
+    # This guarantees uninterrupted daily continuity for lag calculations on June 1 and target alignment on September 30
     date_list = []
     for year in range(start_year, end_year + 1):
-        dates = pd.date_range(start=f"{year}-06-01", end=f"{year}-09-30", freq="D")
+        dates = pd.date_range(start=f"{year}-05-15", end=f"{year}-10-15", freq="D")
         date_list.extend(dates)
     times = pd.DatetimeIndex(date_list)
 
@@ -227,7 +228,7 @@ def generate_synthetic_era5_dataset(
     else:
         date_list = []
         for year in range(start_year, end_year + 1):
-            dates = pd.date_range(start=f"{year}-06-01", end=f"{year}-09-30", freq="D")
+            dates = pd.date_range(start=f"{year}-05-15", end=f"{year}-10-15", freq="D")
             date_list.extend(dates)
         times = pd.DatetimeIndex(date_list)
         lats = np.arange(lat_bounds[0], lat_bounds[1] + resolution, resolution)

@@ -70,7 +70,7 @@ monsooncast/
 
 ```bash
 # Clone the repository
-git clone https://github.com/khushaalsrivastava/MonsoonCast.git
+git clone https://github.com/khushaalsrivastava444-cmyk/MonsoonCast.git
 cd MonsoonCast
 
 # Create and activate virtual environment
@@ -128,17 +128,26 @@ python scripts/run_experiment.py --config configs/reanalysis.yaml
 
 ## 5. Quantitative Benchmark Results
 
-Evaluated on held-out test seasons (2021–2023; $N = 104,025$ grid-day instances; extreme event frequency = $1.74\%$). Operational decision threshold tuned strictly on the validation partition to eliminate data leakage:
+> [!IMPORTANT]
+> **Data Provenance & Scientific Disclosure:**  
+> The quantitative metrics presented below represent a **Provisional Benchmark on the Synthetic Validation Fixture (0.50° Grid)** ($N = 103,455$ grid-day instances across held-out test seasons 2021–2023; extreme event prevalence = $1.75\%$).  
+> These numbers rigorously verify software pipeline integrity, causal time alignment (no seasonal boundary bleeding), and probability calibration mechanics. They must **not** be cited as empirical atmospheric observations until rerun against archived IMD 0.25° NetCDF files. Provenance details are formalized in `artifacts/experiments/provenance_manifest.json`.
+
+Evaluated on held-out test seasons (2021–2023; $N = 103,455$ grid-day instances: 285 grid cells $\times$ 121 valid issue days per season $\times$ 3 test seasons; extreme event frequency = $1.75\%$). Operational decision thresholds are tuned strictly on the validation partition to eliminate data leakage. All confidence intervals are computed via **Spatial-Date Block Bootstrap** (5-day synoptic date clusters preserving spatial-temporal dependence):
 
 | Model Architecture | PR-AUC | ROC-AUC | POD (Recall) | FAR (False Alarm) | CSI [95% CI] | BSS (vs Clim) | ECE |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Seasonal Climatology** | 0.0457 | 0.6144 | 0.344 | 0.952 | 0.044 [0.04–0.05] | +0.000 (Ref) | 0.022 |
-| **Lag-1 Persistence** | 0.0673 | 0.5212 | 0.059 | 0.941 | 0.030 [0.02–0.04] | +0.067 | 0.001 |
-| **Logistic Regression** | 0.0654 | 0.7950 | 0.311 | 0.920 | 0.068 [0.06–0.07] | -9.402 | 0.360 |
-| **Random Forest** | 0.0616 | 0.7860 | 0.327 | 0.924 | 0.066 [0.06–0.07] | -8.125 | 0.333 |
-| **XGBoost Classifier** | 0.0646 | 0.7913 | 0.356 | 0.924 | 0.067 [0.06–0.07] | -0.259 | 0.056 |
-| **PyTorch Tabular MLP** | 0.0656 | 0.7948 | 0.300 | 0.921 | 0.067 [0.06–0.07] | -9.900 | 0.361 |
-| **Calibrated Ensemble** | **0.0648** | **0.7901** | **0.385** | **0.927** | **0.065 [0.06–0.07]** | **+0.088** | **0.001** |
+| **Seasonal Climatology** | 0.0481 | 0.6142 | 0.121 | 0.914 | 0.053 [0.04–0.06] | +0.000 (Ref) | 0.023 |
+| **Lag-1 Persistence** | 0.0592 | 0.5170 | 0.051 | 0.949 | 0.026 [0.02–0.03] | +0.067 | 0.000 |
+| **Logistic Regression** | 0.0679 | 0.7866 | 0.263 | 0.911 | 0.071 [0.06–0.08] | -9.339 | 0.360 |
+| **Random Forest** | 0.0638 | 0.7815 | 0.309 | 0.913 | 0.073 [0.07–0.08] | -8.115 | 0.334 |
+| **XGBoost Classifier** | 0.0667 | 0.7833 | 0.244 | 0.909 | 0.071 [0.06–0.08] | -0.259 | 0.057 |
+| **PyTorch Tabular MLP** | 0.0667 | 0.7870 | 0.252 | 0.910 | 0.071 [0.06–0.08] | -9.724 | 0.359 |
+| **Calibrated Ensemble** | **0.0673** | **0.7817** | **0.361** | **0.919** | **0.071 [0.07–0.08]** | **+0.088** | **0.001** |
+
+> [!NOTE]
+> **Scientific Note on Uncertainty Terminology:**  
+> The ensemble spread $\sigma_{\text{ens}} = \sqrt{\frac{1}{K}\sum_{k=1}^K (p_k - \bar{p})^2}$ serves as an **empirical inter-model disagreement metric** across diverse model architectures (linear, tree-based, gradient-boosted). While it provides an operationally valuable proxy for synoptic forecast sensitivity and model disagreement, it is not automatically an exhaustive Bayesian epistemic uncertainty estimate (which requires integrating over the parameter posterior $p(\mathbf{w}|\mathcal{D})$).
 
 ---
 
@@ -206,7 +215,7 @@ If you use MonsoonCast in your academic research, please cite:
   month        = feb,
   year         = 2026,
   version      = {0.3.0},
-  url          = {https://github.com/khushaalsrivastava/MonsoonCast}
+  url          = {https://github.com/khushaalsrivastava444-cmyk/MonsoonCast}
 }
 ```
 

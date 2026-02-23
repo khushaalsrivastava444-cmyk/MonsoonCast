@@ -59,7 +59,7 @@ def main():
     df_val = pd.read_parquet(val_path)
 
     feature_cols = [c for c in df_train.columns if c not in [
-        "time", "lat", "lon", "year", "month", "doy", "target_rainfall", "target_event"
+        "time", "issue_date", "target_valid_date", "lat", "lon", "year", "month", "doy", "target_rainfall", "target_event"
     ]]
     y_train = df_train["target_event"].values
     y_train_amount = df_train["target_rainfall"].values

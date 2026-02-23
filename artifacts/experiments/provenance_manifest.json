@@ -1,0 +1,42 @@
+{
+  "project_name": "MonsoonCast",
+  "version": "0.3.0",
+  "release_date": "2026-02-23",
+  "data_provenance": {
+    "source_type": "synthetic_validation_fixture",
+    "is_synthetic": true,
+    "provisional_benchmark": true,
+    "spatial_resolution_deg": 0.5,
+    "spatial_domain": {
+      "name": "Central India Core Monsoon Zone",
+      "lat_min": 18.0,
+      "lat_max": 25.0,
+      "lon_min": 73.0,
+      "lon_max": 82.0,
+      "n_lat_points": 15,
+      "n_lon_points": 19,
+      "n_grid_cells": 285
+    },
+    "temporal_scope": {
+      "season": "Summer Monsoon (JJAS)",
+      "issue_window": "June 1 to September 29 (121 valid issue days/season)",
+      "target_valid_window": "June 2 to September 30 (121 valid target days/season)",
+      "lead_days": 1,
+      "train_years": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018],
+      "val_years": [2019, 2020],
+      "test_years": [2021, 2022, 2023],
+      "train_samples": 310365,
+      "val_samples": 68970,
+      "test_samples": 103455
+    },
+    "evaluation_methodology": {
+      "bootstrap_method": "Spatial-Date Block Bootstrap",
+      "block_length_days": 5,
+      "n_bootstraps": 500,
+      "confidence_level": 0.95,
+      "preserves_spatial_dependence": true,
+      "preserves_synoptic_temporal_autocorrelation": true
+    },
+    "scientific_disclaimer": "CRITICAL DATA GOVERNANCE POLICY: The baseline evaluation results reported herein were generated on a deterministic synthetic meteorological test fixture (0.50 degree resolution) designed exclusively for software pipeline verification, CI testing, and end-to-end integration. These synthetic numbers serve to verify algorithmic correctness, zero-leakage constraints, and calibration mechanics, but must NOT be cited as empirical atmospheric observations. Real-data operational runs require downloading IMD 0.25 gridded archives as documented in data/README.md."
+  }
+}

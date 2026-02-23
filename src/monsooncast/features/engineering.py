@@ -61,13 +61,22 @@ def compute_spatial_neighborhood_features(
     return da_mean, da_max
 
 
-def compute_lagged_features(series: pd.Series, lags: list[int] = [1, 2, 3, 7]) -> pd.DataFrame:
-    """Compute backward-shifted lags for a 1D time series at a single grid cell."""
+def compute_lagged_features(
+    series: pd.Series, lags: list[int] = [1, 2, 3, 7], group_col: pd.Series | None = None
+) -> pd.DataFrame:
+    """Compute backward-shifted lags for a 1D time series at a single grid cell.
+
+    If group_col is provided (e.g. series.index.year), shifts are strictly confined within
+    each group to prevent temporal boundary leakage across non-contiguous seasons.
+    """
     lag_dict = {}
-    for lag in lags:
-        # lag=1 means value at t-1 (or if series is current day R(t), lag=1 is R(t-1))
-        # When issue day is t, lag 0 is R(t), lag 1 is R(t-1), etc.
-        lag_dict[f"rain_lag{lag}"] = series.shift(lag)
+    if group_col is not None:
+        grouped = series.groupby(group_col)
+        for lag in lags:
+            lag_dict[f"rain_lag{lag}"] = grouped.shift(lag)
+    else:
+        for lag in lags:
+            lag_dict[f"rain_lag{lag}"] = series.shift(lag)
     return pd.DataFrame(lag_dict, index=series.index)
 
 
@@ -76,19 +85,36 @@ def compute_rolling_features(
     rolling_sums: list[int] = [3, 7],
     rolling_max: list[int] = [7],
     rolling_mean: list[int] = [7],
+    group_col: pd.Series | None = None,
 ) -> pd.DataFrame:
     """Compute backward-looking rolling statistics on a 1D rainfall series.
 
     Uses min_periods=1 to allow graceful handling of early-season boundary.
     All rolling windows include the current day observation R(t) and past days.
+    If group_col is provided, rolling windows do not bleed across season boundaries.
     """
     roll_dict = {}
-    for w in rolling_sums:
-        roll_dict[f"rain_roll_sum{w}"] = series.rolling(window=w, min_periods=1).sum()
-    for w in rolling_max:
-        roll_dict[f"rain_roll_max{w}"] = series.rolling(window=w, min_periods=1).max()
-    for w in rolling_mean:
-        roll_dict[f"rain_roll_mean{w}"] = series.rolling(window=w, min_periods=1).mean()
+    if group_col is not None:
+        grouped = series.groupby(group_col)
+        for w in rolling_sums:
+            roll_dict[f"rain_roll_sum{w}"] = grouped.transform(
+                lambda s: s.rolling(window=w, min_periods=1).sum()
+            )
+        for w in rolling_max:
+            roll_dict[f"rain_roll_max{w}"] = grouped.transform(
+                lambda s: s.rolling(window=w, min_periods=1).max()
+            )
+        for w in rolling_mean:
+            roll_dict[f"rain_roll_mean{w}"] = grouped.transform(
+                lambda s: s.rolling(window=w, min_periods=1).mean()
+            )
+    else:
+        for w in rolling_sums:
+            roll_dict[f"rain_roll_sum{w}"] = series.rolling(window=w, min_periods=1).sum()
+        for w in rolling_max:
+            roll_dict[f"rain_roll_max{w}"] = series.rolling(window=w, min_periods=1).max()
+        for w in rolling_mean:
+            roll_dict[f"rain_roll_mean{w}"] = series.rolling(window=w, min_periods=1).mean()
     return pd.DataFrame(roll_dict, index=series.index)
 
 
@@ -100,13 +126,17 @@ def build_tabular_feature_dataset(
     lead_days: int = 1,
     feature_config: FeatureConfig | None = None,
     var_name: str = "rain",
+    monsoon_months: list[int] | None = [6, 7, 8, 9],
+    target_within_season_only: bool = True,
 ) -> pd.DataFrame:
     """Transform 3D spatio-temporal xarray dataset into tabular ML features and aligned targets.
 
-    Each row corresponds to an issue date t and grid coordinate (lat, lon).
-    Target:
-    - 'target_rainfall': R(s, t + lead_days)
-    - 'target_event': 1 if R(s, t + lead_days) >= threshold else 0
+    Causally Strict Design:
+    - Features (lags, rolling windows) are computed per continuous year block to prevent cross-year leakage.
+    - Each row records exact 'issue_date' and 'target_valid_date'.
+    - If target_within_season_only is True, samples are filtered so BOTH issue_date and
+      target_valid_date strictly reside within the monsoon season (e.g. JJAS), completely
+      preventing season boundary jumps (e.g. Sept 30 predicting June 1 of next year).
     """
     cfg = feature_config or FeatureConfig()
 
@@ -144,11 +174,18 @@ def build_tabular_feature_dataset(
             df_cell["month"] = times.month
             df_cell["doy"] = times.dayofyear
 
+            # Explicit issue and target valid calendar timestamps
+            df_cell["issue_date"] = times
+            df_cell["target_valid_date"] = times + pd.Timedelta(days=lead_days)
+
             # Current day rainfall at issue time t
             df_cell["rain_current"] = rain_1d.values
 
+            # Grouping series by calendar year strictly prevents inter-annual/cross-season bleeding
+            group_year = pd.Series(times.year, index=times)
+
             # Lagged features
-            df_lags = compute_lagged_features(rain_1d, lags=cfg.lags)
+            df_lags = compute_lagged_features(rain_1d, lags=cfg.lags, group_col=group_year)
             df_cell = pd.concat([df_cell, df_lags], axis=1)
 
             # Rolling features
@@ -157,6 +194,7 @@ def build_tabular_feature_dataset(
                 rolling_sums=cfg.rolling_sums,
                 rolling_max=cfg.rolling_max,
                 rolling_mean=cfg.rolling_mean,
+                group_col=group_year,
             )
             df_cell = pd.concat([df_cell, df_rolls], axis=1)
 
@@ -168,7 +206,6 @@ def build_tabular_feature_dataset(
             # Climatology feature (from training climatology)
             if cfg.include_climatology and train_climatology is not None:
                 clim_cell = train_climatology.sel(lat=lat_val, lon=lon_val)
-                # Map DOY to climatology value
                 clim_map = {
                     int(d): float(v)
                     for d, v in zip(clim_cell["dayofyear"].values, clim_cell.values)
@@ -192,12 +229,24 @@ def build_tabular_feature_dataset(
                     v_arr = df_cell["era5_v850"].values
                     df_cell["era5_wind_speed850"] = np.sqrt(u_arr**2 + v_arr**2)
 
-            # Next-day Target (strictly shifted backwards by lead_days)
-            target_amount = rain_1d.shift(-lead_days)
+            # Next-day Target strictly shifted within each year block
+            # (Year boundary shift ensures the end of season gets NaN target, NEVER next year's June 1)
+            target_amount = rain_1d.groupby(group_year).shift(-lead_days)
             df_cell["target_rainfall"] = target_amount.values
             df_cell["target_event"] = np.where(
                 target_amount.isna(), np.nan, (target_amount >= threshold).astype(float)
             )
+
+            # Filter to valid season issue dates and valid targets within season
+            if monsoon_months is not None:
+                if target_within_season_only:
+                    valid_mask = (
+                        df_cell["issue_date"].dt.month.isin(monsoon_months)
+                        & df_cell["target_valid_date"].dt.month.isin(monsoon_months)
+                    )
+                else:
+                    valid_mask = df_cell["issue_date"].dt.month.isin(monsoon_months)
+                df_cell = df_cell[valid_mask].copy()
 
             records.append(df_cell)
 
@@ -209,12 +258,23 @@ def build_tabular_feature_dataset(
     # Drop rows where target is NaN (e.g. end of season or missing)
     full_df = full_df.dropna(subset=["target_rainfall", "target_event"]).reset_index(drop=True)
 
-    # Fill remaining predictor NaNs (e.g. early lag boundary) with median/0
+    # Fill early lag boundary NaNs with climatology mean or 0
     predictor_cols = [
         c
         for c in full_df.columns
         if c
-        not in ["time", "lat", "lon", "year", "month", "doy", "target_rainfall", "target_event"]
+        not in [
+            "time",
+            "issue_date",
+            "target_valid_date",
+            "lat",
+            "lon",
+            "year",
+            "month",
+            "doy",
+            "target_rainfall",
+            "target_event",
+        ]
     ]
     for col in predictor_cols:
         full_df[col] = full_df[col].fillna(0.0)

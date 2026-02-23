@@ -67,9 +67,12 @@ models_path = Path("artifacts/models/monsooncast_models.joblib")
 metrics_path = Path("artifacts/metrics/evaluation_results.json")
 test_path = Path("data/processed/test.parquet")
 synth_sample = Path("data/raw/synthetic_sample.nc")
+imd_files = list(Path("data/raw/imd").glob("*.nc")) if Path("data/raw/imd").exists() else []
+is_synthetic = len(imd_files) == 0
 
 with col1:
-    st.metric("System State", "Active", "Release v0.1.0 (Feb 2026)")
+    state_label = "Ready" if models_path.exists() and metrics_path.exists() else "Setup Required"
+    st.metric("System State", state_label, "Release v0.3.0 (Feb 2026)")
 with col2:
     status_art = "Trained & Available" if models_path.exists() else "Not Trained"
     st.metric("Model Registry", status_art)
@@ -77,7 +80,16 @@ with col3:
     status_met = "Available" if metrics_path.exists() else "Pending Run"
     st.metric("Evaluation Metrics", status_met)
 with col4:
-    st.metric("Target Domain", "Central India (18-25°N, 73-82°E)", "0.25° IMD Grid")
+    grid_str = "0.50° Grid (Synthetic)" if is_synthetic else "0.25° IMD Observed"
+    st.metric("Active Domain", "Central India", grid_str)
+
+if is_synthetic:
+    st.warning(
+        "⚠️ **PROVISIONAL BENCHMARK NOTICE:** The current model artifacts and evaluation metrics were generated "
+        "using a deterministic synthetic meteorological test fixture (0.50° resolution). This fixture verifies pipeline "
+        "functionality, causal zero-leakage constraints, and calibration algorithms, but must NOT be cited as empirical "
+        "meteorological evidence. Download real IMD gridded NetCDF data to data/raw/imd/ for production analysis."
+    )
 
 st.markdown("---")
 

@@ -122,9 +122,26 @@ def verify_no_leakage(
                         f"Suspected leakage: Feature '{col}' has near-perfect correlation ({corr:.4f}) with target!"
                     )
 
+    # 5: Check causal sequence of issue_date vs target_valid_date
+    for split_name, split_df in [("Train", train_df), ("Val", val_df), ("Test", test_df)]:
+        if "issue_date" in split_df.columns and "target_valid_date" in split_df.columns:
+            issues = pd.to_datetime(split_df["issue_date"])
+            valids = pd.to_datetime(split_df["target_valid_date"])
+            if not (valids > issues).all():
+                report["passed"] = False
+                report["errors"].append(
+                    f"Causal violation in {split_name}: Target valid dates must be strictly after issue dates!"
+                )
+            # Ensure no cross-year season leaps (e.g. Sept 30 -> next year June 1)
+            if not (issues.dt.year == valids.dt.year).all():
+                report["passed"] = False
+                report["errors"].append(
+                    f"Seasonal boundary leak in {split_name}: Issue date and target valid date span different calendar years!"
+                )
+
     if not report["passed"]:
         logger.error(f"Leakage verification FAILED: {report['errors']}")
         raise TargetLeakageError(f"Leakage detected: {'; '.join(report['errors'])}")
 
-    logger.info("Leakage verification passed: No temporal or target leakage detected.")
+    logger.info("Leakage verification passed: No temporal, seasonal boundary, or target leakage detected.")
     return report

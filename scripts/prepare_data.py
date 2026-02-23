@@ -9,6 +9,7 @@ import logging
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -20,7 +21,7 @@ from monsooncast.data.loaders import (
     ERA5Adapter,
     generate_synthetic_monsoon_dataset,
 )
-from monsooncast.data.preprocessing import align_and_preprocess_dataset
+from monsooncast.data.preprocessing import subset_spatial
 from monsooncast.evaluation.validation import chronological_split, verify_no_leakage
 from monsooncast.features.engineering import (
     build_tabular_feature_dataset,
@@ -62,32 +63,37 @@ def main():
             logger.info(f"Loading existing test fixture: {sample_path}")
             ds = xr.open_dataset(sample_path)
 
-    # 2. Subset spatial bounds and filter monsoon season (JJAS)
-    logger.info("Aligning spatial domain and filtering monsoon season (JJAS)...")
-    ds_monsoon = align_and_preprocess_dataset(ds, cfg.spatial_bounds, cfg.temporal_scope)
+    # 2. Subset spatial bounds (preserving continuous temporal buffer for uninterrupted lag/rolling window calculation)
+    logger.info("Subsetting spatial domain to Central India bounding box...")
+    ds_sub = subset_spatial(ds, cfg.spatial_bounds)
+    if "rain" in ds_sub:
+        rain_arr = ds_sub["rain"].values
+        ds_sub["rain"].values = np.where(rain_arr < 0.0, 0.0, rain_arr)
 
-    # 3. Compute Training Climatology strictly on train years (No Leakage!)
+    # 3. Compute Training Climatology strictly on train years and monsoon months (No Leakage!)
     train_years = cfg.temporal_scope.train_years
-    times = pd.to_datetime(ds_monsoon["time"].values)
-    train_mask = times.year.isin(train_years)
-    ds_train = ds_monsoon.isel(time=train_mask)
+    times = pd.to_datetime(ds_sub["time"].values)
+    train_mask = times.year.isin(train_years) & times.month.isin(cfg.temporal_scope.monsoon_months)
+    ds_train = ds_sub.isel(time=train_mask)
     logger.info(f"Computing historical climatology strictly from training seasons ({min(train_years)}-{max(train_years)})...")
     train_climatology = compute_training_climatology(ds_train)
 
-    # 4. Feature Engineering
+    # 4. Feature Engineering on continuous daily timeline with strict calendar alignment
     era5_ds = None
     if args.include_era5:
         logger.info("Coupling atmospheric reanalysis predictors (ERA5)...")
         era5_adapter = ERA5Adapter(data_dir=Path(cfg.raw_dir) / "era5")
-        era5_ds = era5_adapter.load_variables(rainfall_ds=ds_monsoon)
+        era5_ds = era5_adapter.load_variables(rainfall_ds=ds_sub)
 
-    logger.info("Constructing lagged, rolling, and spatial neighborhood features...")
+    logger.info("Constructing lagged, rolling, and spatial neighborhood features (with cross-year boundary isolation)...")
     df_features = build_tabular_feature_dataset(
-        ds=ds_monsoon,
+        ds=ds_sub,
         train_climatology=train_climatology,
         era5_ds=era5_ds,
         threshold=cfg.target.default_threshold,
-        lead_days=cfg.target.lead_days
+        lead_days=cfg.target.lead_days,
+        monsoon_months=cfg.temporal_scope.monsoon_months,
+        target_within_season_only=True,
     )
 
     # 5. Chronological Splitting
@@ -96,12 +102,12 @@ def main():
         df_features,
         train_years=cfg.temporal_scope.train_years,
         val_years=cfg.temporal_scope.val_years,
-        test_years=cfg.temporal_scope.test_years
+        test_years=cfg.temporal_scope.test_years,
     )
 
     # 6. Leakage Verification
     feature_cols = [c for c in df_features.columns if c not in [
-        "time", "lat", "lon", "year", "month", "doy", "target_rainfall", "target_event"
+        "time", "issue_date", "target_valid_date", "lat", "lon", "year", "month", "doy", "target_rainfall", "target_event"
     ]]
     logger.info(f"Verifying leakage on {len(feature_cols)} predictor features...")
     verify_no_leakage(df_train, df_val, df_test, feature_cols=feature_cols, target_col="target_event")

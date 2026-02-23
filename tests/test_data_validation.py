@@ -28,7 +28,12 @@ def test_synthetic_monsoon_generator():
     assert ds.attrs.get("is_synthetic") in (1, True, "true")
     assert ds.sizes["lat"] > 0
     assert ds.sizes["lon"] > 0
-    assert ds.sizes["time"] == (30 + 31 + 31 + 30) * 2  # JJAS for 2 years
+    # 154 days per year: May 15 to Oct 15 buffer for uninterrupted lag/lead calculations
+    assert ds.sizes["time"] == 154 * 2
+    # Verify May buffer and October buffer presence
+    times = pd.to_datetime(ds.time.values)
+    assert 5 in times.month
+    assert 10 in times.month
 
 
 def test_validate_coordinates_valid():

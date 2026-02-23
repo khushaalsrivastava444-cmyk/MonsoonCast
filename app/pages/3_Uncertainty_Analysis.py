@@ -116,9 +116,14 @@ else:
 
 st.markdown("---")
 
-# 3. Ensemble Epistemic Uncertainty
+# 3. Ensemble Disagreement & Model Uncertainty Quantification
 st.subheader("3. Ensemble Member Spread & Disagreement")
-st.markdown("""
+st.markdown(r"""
 During synoptic monsoon depressions, convective initiation exhibits strong chaotic sensitivity.
-The ensemble spread $\\sigma = \\sqrt{\frac{1}{K}\\sum(p_k - \bar{p})^2}$ provides a physically motivated metric of epistemic uncertainty, signaling when the operational forecast carries elevated risk of severe prediction error.
+The ensemble inter-model spread is computed directly from individual member probability forecasts:
+
+$$\sigma_{\text{ens}} = \sqrt{\frac{1}{K}\sum_{k=1}^K (p_k - \bar{p})^2}$$
+
+> **Scientific Distinction on Uncertainty Quantification:**<br>
+> The inter-model standard deviation $\sigma_{\text{ens}}$ is an **empirical disagreement metric** across diverse model families (regularized linear, tree-based bagging, and gradient-boosted decision trees). While it highlights forecast sensitivity and situations where different model inductive biases diverge, it is **not automatically an exhaustive Bayesian epistemic uncertainty** estimate. In rigorous probabilistic theory, epistemic uncertainty arises from parameter uncertainty $p(\mathbf{w}|\mathcal{D})$ under finite observations. In MonsoonCast, $\sigma_{\text{ens}}$ functions as an operationally valuable proxy for structural model uncertainty, flagging situations where point forecasts carry high risk of severe error.
 """)

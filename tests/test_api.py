@@ -18,14 +18,35 @@ def test_api_health():
 
 
 def test_api_metadata():
-    """Verify /metadata endpoint returns domain coordinates and supported models."""
+    """Verify /metadata endpoint returns domain coordinates, resolution, and data provenance."""
     response = client.get("/metadata")
     assert response.status_code == 200
     data = response.json()
     assert "domain" in data
     assert data["domain"]["name"] == "Central India Core Monsoon Zone"
+    assert "resolution_deg" in data["domain"]
+    assert "provenance" in data
+    assert "is_synthetic" in data["provenance"]
+    assert "disclaimer" in data["provenance"]
     assert "supported_models" in data
     assert "ensemble" in data["supported_models"]
+
+
+def test_api_rejects_missing_required_features():
+    """Verify API returns HTTP 422 when required meteorological predictors are missing."""
+    invalid_payload = {
+        "samples": [
+            {
+                "lat": 21.0,
+                "lon": 78.0,
+                "doy": 200,
+                # Missing rain_current, rain_lag1, etc.
+            }
+        ],
+        "model_name": "ensemble",
+    }
+    response = client.post("/predict/event-probability", json=invalid_payload)
+    assert response.status_code == 422
 
 
 def test_api_experiments():

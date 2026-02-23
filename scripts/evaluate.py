@@ -106,12 +106,15 @@ def main():
         metrics["ece"] = rel_curve["ece"]
         reliability_results[name] = rel_curve
 
-        # Bootstrap confidence interval for CSI (Threat Score)
+        # Spatial-Date Block Bootstrap confidence interval for CSI (Threat Score)
+        test_dates = df_test["issue_date"].values if "issue_date" in df_test.columns else df_test["time"].values
         csi_low, csi_pt, csi_high = bootstrap_metric_ci(
             y_test_binary,
             probs,
             metric_func=lambda yt, yp: compute_classification_metrics(yt, yp, threshold=eval_thresh)["csi"],
-            n_bootstrap=200
+            dates=test_dates,
+            block_size_days=5,
+            n_bootstrap=100,
         )
         metrics["csi_95ci"] = [csi_low, csi_high]
 

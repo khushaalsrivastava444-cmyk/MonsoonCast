@@ -113,17 +113,20 @@ All features at simulated issue time $t$ use only observations up to day $t$:
 
 ## 9. Experimental Results
 
-The quantitative benchmark evaluated on held-out test years (2021–2023) is summarized in the table below:
+> **Provisional Benchmark & Provenance Notice:**  
+> The quantitative results reported herein were evaluated on the **Synthetic Validation Fixture (0.50° regular grid)** over the Central India domain ($N = 103,455$ grid-day instances across test seasons 2021–2023; extreme event frequency = $1.75\%$). These metrics verify end-to-end pipeline execution, leak-free causal chronological alignment (strictly zero season boundary leakage), and post-hoc calibration mechanics. They must not be cited as empirical atmospheric observations until rerun against archived IMD 0.25° NetCDF archives (provenance recorded in `artifacts/experiments/provenance_manifest.json`).
+
+The quantitative benchmark evaluated on held-out test years (2021–2023; $N = 103,455$ grid-day instances) with **Spatial-Date Block Bootstrap** (5-day synoptic date clusters) is summarized below:
 
 | Model Architecture | PR-AUC | ROC-AUC | POD (Recall) | FAR (False Alarm) | CSI [95% CI] | BSS (vs Clim) | ECE |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Seasonal Climatology** | 0.0457 | 0.6144 | 0.344 | 0.952 | 0.044 [0.04-0.05] | +0.000 (Ref) | 0.022 |
-| **Lag-1 Persistence** | 0.0673 | 0.5212 | 0.059 | 0.941 | 0.030 [0.02-0.04] | +0.067 | 0.001 |
-| **Logistic Regression** | 0.0641 | 0.7880 | 0.322 | 0.922 | 0.067 [0.06-0.07] | -9.549 | 0.367 |
-| **Random Forest** | 0.0611 | 0.7835 | 0.303 | 0.923 | 0.066 [0.06-0.07] | -8.314 | 0.336 |
-| **XGBoost Classifier** | 0.0641 | 0.7876 | 0.317 | 0.921 | 0.068 [0.06-0.07] | -0.261 | 0.057 |
-| **PyTorch Tabular MLP** | 0.0637 | 0.7868 | 0.291 | 0.921 | 0.066 [0.06-0.07] | -10.328 | 0.382 |
-| **Calibrated Ensemble** | **0.0652** | **0.7861** | **0.351** | **0.923** | **0.067 [0.06-0.07]** | **+0.089** | **0.001** |
+| **Seasonal Climatology** | 0.0481 | 0.6142 | 0.121 | 0.914 | 0.053 [0.04–0.06] | +0.000 (Ref) | 0.023 |
+| **Lag-1 Persistence** | 0.0592 | 0.5170 | 0.051 | 0.949 | 0.026 [0.02–0.03] | +0.067 | 0.000 |
+| **Logistic Regression** | 0.0679 | 0.7866 | 0.263 | 0.911 | 0.071 [0.06–0.08] | -9.339 | 0.360 |
+| **Random Forest** | 0.0638 | 0.7815 | 0.309 | 0.913 | 0.073 [0.07–0.08] | -8.115 | 0.334 |
+| **XGBoost Classifier** | 0.0667 | 0.7833 | 0.244 | 0.909 | 0.071 [0.06–0.08] | -0.259 | 0.057 |
+| **PyTorch Tabular MLP** | 0.0667 | 0.7870 | 0.252 | 0.910 | 0.071 [0.06–0.08] | -9.724 | 0.359 |
+| **Calibrated Ensemble** | **0.0673** | **0.7817** | **0.361** | **0.919** | **0.071 [0.07–0.08]** | **+0.088** | **0.001** |
 
 ![Figure 1: Study Domain Climatology](figures/fig1_study_domain_climatology.png)
 *Figure 1: (Left) Mean daily monsoon precipitation across Central India domain (18°-25°N, 73°-82°E). (Right) Intra-seasonal progression of domain mean, 95th percentile, and daily maximum rainfall across JJAS (DOY 153 to 273).*
@@ -144,7 +147,7 @@ The quantitative benchmark evaluated on held-out test years (2021–2023) is sum
 ## 10. Uncertainty and Calibration Analysis
 
 1. **Probability Calibration:** Uncalibrated tree ensembles and deep networks exhibited severe overconfidence for probability predictions $> 0.60$. Post-hoc isotonic regression reduced Expected Calibration Error (ECE) to 0.001, pulling probability forecasts into close alignment with observed event frequencies.
-2. **Epistemic Uncertainty via Spread:** Inter-model probability standard deviation ($\sigma$) peaked in regions surrounding steep orographic gradients and at the boundaries of advancing rainbands, providing an interpretable warning signal when model consensus was low.
+2. **Empirical Ensemble Spread vs. Epistemic Uncertainty:** Inter-model probability standard deviation ($\sigma_{\text{ens}} = \sqrt{\frac{1}{K}\sum_{k=1}^K (p_k - \bar{p})^2}$) peaked in regions surrounding steep orographic gradients and at the boundaries of advancing rainbands, providing an interpretable warning signal when model consensus was low. We emphasize the scientific distinction that this empirical spread is a measure of structural model disagreement, rather than an exhaustive Bayesian epistemic uncertainty derived from the true parameter posterior.
 
 ![Figure 3: Reliability Diagrams](figures/fig3_reliability_diagrams.png)
 *Figure 3: Reliability diagrams on held-out test seasons (2021-2023) showing calibration improvement achieved by isotonic post-processing.*
@@ -160,16 +163,16 @@ To address Secondary Research Question 1 (*Which meteorological predictors provi
 
 | Rank | Predictor Feature | Physical Group | Permutation $\Delta\text{AUC}$ | XGBoost Relative Gain |
 | :---: | :--- | :--- | :---: | :---: |
-| 1 | `doy_sin` | Climatological / Calendar | +0.05703 | 0.00 |
-| 2 | `climatology_mean` | Historical Climatology | +0.02217 | 0.00 |
-| 3 | `era5_tcwv` | ERA5 Atmospheric State | +0.00942 | 0.00 |
-| 4 | `rain_spatial_mean3x3` | Mesoscale Spatial Context | +0.00817 | 0.00 |
-| 5 | `rain_roll_sum7` | Antecedent Rainfall History | +0.00516 | 0.00 |
-| 6 | `rain_spatial_max3x3` | Mesoscale Spatial Context | +0.00475 | 0.00 |
-| 7 | `era5_z500` | ERA5 Atmospheric State | +0.00425 | 0.00 |
-| 8 | `rain_roll_max7` | Antecedent Rainfall History | +0.00410 | 0.00 |
-| 9 | `rain_current` | Antecedent Rainfall History | +0.00202 | 0.00 |
-| 10 | `era5_msl` | ERA5 Atmospheric State | +0.00184 | 0.00 |
+| 1 | `climatology_mean` | Historical Climatology | +0.04082 | 0.00 |
+| 2 | `doy_sin` | Climatological / Calendar | +0.02912 | 0.00 |
+| 3 | `era5_tcwv` | ERA5 Atmospheric State | +0.01352 | 0.00 |
+| 4 | `rain_spatial_mean3x3` | Mesoscale Spatial Context | +0.00702 | 0.00 |
+| 5 | `rain_roll_sum7` | Antecedent Rainfall History | +0.00624 | 0.00 |
+| 6 | `rain_spatial_max3x3` | Mesoscale Spatial Context | +0.00487 | 0.00 |
+| 7 | `rain_roll_max7` | Antecedent Rainfall History | +0.00283 | 0.00 |
+| 8 | `rain_lag7` | Antecedent Rainfall History | +0.00275 | 0.00 |
+| 9 | `rain_lag2` | Antecedent Rainfall History | +0.00083 | 0.00 |
+| 10 | `rain_current` | Antecedent Rainfall History | +0.00065 | 0.00 |
 
 ### Key Interpretability Findings:
 1. **Intra-Seasonal Monsoon Phase:** Cyclical day-of-year encodings (`doy_sin`) and grid-cell climatological expectations establish the background synoptic state, delineating active from break monsoon phases.
@@ -188,17 +191,17 @@ To answer Secondary Research Questions 2 and 4, the calibrated ensemble was eval
 ### Threshold Sensitivity:
 | Threshold (mm/day) | IMD Classification | Event Base Rate (%) | PR-AUC | ROC-AUC | CSI | ECE |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
-| **35.5** | Rather Heavy | 4.23% | 0.1163 | 0.7602 | 0.110 | 0.024 |
-| **50.0** | Heavy (Benchmark) | 1.74% | 0.0603 | 0.7901 | 0.065 | 0.001 |
-| **64.5** | Very Heavy | 0.80% | 0.0338 | 0.8083 | 0.044 | 0.011 |
-| **100.0** | Extremely Heavy | 0.11% | 0.0092 | 0.8884 | 0.011 | 0.018 |
+| **35.5** | Rather Heavy | 4.32% | 0.1145 | 0.7474 | 0.109 | 0.024 |
+| **50.0** | Heavy (Benchmark) | 1.75% | 0.0636 | 0.7817 | 0.071 | 0.001 |
+| **64.5** | Very Heavy | 0.81% | 0.0353 | 0.7994 | 0.040 | 0.011 |
+| **100.0** | Extremely Heavy | 0.12% | 0.0097 | 0.8965 | 0.011 | 0.018 |
 
 ### Sub-Regional Sensitivity (Central India 18°–25°N, 73°–82°E):
 | Sub-Region | Longitudinal Scope | Samples | Base Rate (%) | ROC-AUC | CSI | ECE |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Western Sector** | 73°–76°E | 32,850 | 3.86% | 0.7246 | 0.075 | 0.006 |
-| **Central Core** | 76°–79°E | 32,850 | 0.98% | 0.7189 | 0.022 | 0.005 |
-| **Eastern Sector** | 79°–82°E | 38,325 | 0.57% | 0.7309 | 0.020 | 0.004 |
+| **Western Sector** | 73°–76°E | 32,670 | 3.84% | 0.7273 | 0.081 | 0.006 |
+| **Central Core** | 76°–79°E | 32,670 | 1.14% | 0.6933 | 0.027 | 0.004 |
+| **Eastern Sector** | 79°–82°E | 38,115 | 0.47% | 0.6614 | 0.007 | 0.005 |
 
 ### Sensitivity Insights:
 - **Discrimination vs Detection Trade-off:** As the threshold increases toward 100 mm/day, ROC-AUC rises to 0.8884 because the synoptic anomalies required for such extremes are severe and easily separable. However, CSI drops to 0.011 due to extreme positive-class rarity (prevalence $0.11\%$).

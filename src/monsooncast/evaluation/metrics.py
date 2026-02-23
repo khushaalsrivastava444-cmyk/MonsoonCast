@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     auc,
     brier_score_loss,
@@ -212,24 +213,78 @@ def bootstrap_metric_ci(
     y_true: np.ndarray,
     y_prob: np.ndarray,
     metric_func: Callable[[np.ndarray, np.ndarray], float],
-    n_bootstrap: int = 500,
+    dates: np.ndarray | pd.Series | None = None,
+    block_size_days: int = 5,
+    n_bootstrap: int = 200,
     alpha: float = 0.05,
     seed: int = 42,
 ) -> tuple[float, float, float]:
-    """Compute non-parametric bootstrap confidence interval (lower, point, upper) for any metric."""
+    """Compute dependence-aware Block-Bootstrap confidence intervals (lower, point, upper).
+
+    Methodology:
+    - When 'dates' are provided (calendar timestamps for each prediction instance),
+      instances are clustered by calendar date. When a date is sampled, ALL spatial grid
+      points across the entire domain on that date are sampled together as an intact cluster,
+      preserving the cross-sectional spatial correlation structure.
+    - Consecutive blocks of calendar dates (block_size_days=5, matching the synoptic
+      lifespan of Indian summer monsoon low-pressure depressions) are resampled with replacement,
+      preserving temporal autocorrelation.
+    - If dates are None, continuous temporal blocks of index length block_size_days are resampled.
+    """
     rng = np.random.default_rng(seed)
-    N = len(y_true)
-    point_est = float(metric_func(y_true, y_prob))
+    y_t = np.asarray(y_true)
+    y_p = np.asarray(y_prob)
+    N = len(y_t)
+    point_est = float(metric_func(y_t, y_p))
 
     boot_samples = []
-    for _ in range(n_bootstrap):
-        idx = rng.choice(N, size=N, replace=True)
-        try:
-            val = metric_func(y_true[idx], y_prob[idx])
-            if not np.isnan(val):
-                boot_samples.append(val)
-        except Exception:
-            continue
+
+    if dates is not None:
+        date_arr = np.asarray(dates)
+        unique_dates = np.unique(date_arr)
+        M = len(unique_dates)
+
+        # Precompute index lookup for each date to keep spatial fields intact
+        date_groups = [np.where(date_arr == d)[0] for d in unique_dates]
+
+        B = max(1, min(block_size_days, M))
+        n_blocks = int(np.ceil(M / B))
+        max_start = max(1, M - B + 1)
+
+        for _ in range(n_bootstrap):
+            # Sample continuous blocks of calendar dates
+            start_indices = rng.integers(0, max_start, size=n_blocks)
+            sampled_day_indices = []
+            for st in start_indices:
+                sampled_day_indices.extend(range(st, min(st + B, M)))
+            sampled_day_indices = sampled_day_indices[:M]
+
+            # Gather all spatial points for these dates
+            sampled_inst_indices = np.concatenate([date_groups[d] for d in sampled_day_indices])
+            try:
+                val = metric_func(y_t[sampled_inst_indices], y_p[sampled_inst_indices])
+                if not np.isnan(val):
+                    boot_samples.append(float(val))
+            except Exception:
+                continue
+    else:
+        # Fallback to contiguous index blocks
+        B = max(1, min(block_size_days, N))
+        n_blocks = int(np.ceil(N / B))
+        max_start = max(1, N - B + 1)
+
+        for _ in range(n_bootstrap):
+            start_indices = rng.integers(0, max_start, size=n_blocks)
+            sampled_indices = []
+            for st in start_indices:
+                sampled_indices.extend(range(st, min(st + B, N)))
+            sampled_indices = np.array(sampled_indices[:N], dtype=int)
+            try:
+                val = metric_func(y_t[sampled_indices], y_p[sampled_indices])
+                if not np.isnan(val):
+                    boot_samples.append(float(val))
+            except Exception:
+                continue
 
     if not boot_samples:
         return point_est, point_est, point_est
