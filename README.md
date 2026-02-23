@@ -6,9 +6,9 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release: v0.3.0](https://img.shields.io/badge/release-v0.3.0-orange.svg)](CITATION.cff)
-[![CI Status](https://img.shields.io/badge/tests-27%20passed-brightgreen.svg)](tests/)
+[![CI Status](https://img.shields.io/badge/tests-28%20passed-brightgreen.svg)](tests/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg)](http://localhost:8000/docs)
-[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B.svg)](http://localhost:8501)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://monsooncast-popwidywnbpu3rgwkn5skh.streamlit.app/)
 
 </div>
 
@@ -351,8 +351,10 @@ Alternatively, execute the complete pipeline in a single command:
 python scripts/run_experiment.py --config configs/reanalysis.yaml
 ```
 
-### 15.2 Launching the Interactive Streamlit Dashboard
+### 15.2 Interactive Streamlit Dashboard
 
+- **Live Cloud Demo:** [monsooncast-popwidywnbpu3rgwkn5skh.streamlit.app](https://monsooncast-popwidywnbpu3rgwkn5skh.streamlit.app/)
+- **Run locally:**
 ```bash
 streamlit run app/streamlit_app.py
 ```

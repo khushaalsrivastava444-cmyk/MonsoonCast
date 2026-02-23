@@ -7,6 +7,16 @@ from api.main import app
 client = TestClient(app)
 
 
+def test_api_root():
+    """Verify root endpoint returns HTTP 200 and welcome documentation info."""
+    response = client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["project"] == "MonsoonCast API"
+    assert data["status"] == "online"
+    assert "docs_url" in data
+
+
 def test_api_health():
     """Verify /health endpoint returns HTTP 200 and healthy status."""
     response = client.get("/health")

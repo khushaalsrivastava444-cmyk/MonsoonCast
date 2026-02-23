@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 # Setup logger
@@ -23,6 +24,15 @@ app = FastAPI(
     version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc"
+)
+
+# Enable CORS for cross-origin frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global model cache
@@ -97,6 +107,20 @@ class QuantileResponse(BaseModel):
     quantiles: Dict[str, List[float]]
     warnings: Optional[List[str]] = None
     status: str = "success"
+
+
+@app.get("/", tags=["System"])
+def root():
+    """Root welcome endpoint providing links to documentation and system status."""
+    return {
+        "project": "MonsoonCast API",
+        "description": "An independent machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
+        "version": "0.3.0",
+        "docs_url": "/docs",
+        "health_url": "/health",
+        "metadata_url": "/metadata",
+        "status": "online"
+    }
 
 
 @app.get("/health", tags=["System"])
