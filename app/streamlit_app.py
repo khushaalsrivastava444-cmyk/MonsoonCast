@@ -1,6 +1,6 @@
-"""MonsoonCast: Research-Grade Streamlit Research Dashboard.
+"""MonsoonCast: Interactive Machine Learning Dashboard.
 
-An AI Ensemble Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Quantification over India.
+An independent ML framework exploring extreme monsoon rainfall prediction, ensemble modelling, and uncertainty estimation over India.
 """
 
 import json
@@ -11,7 +11,7 @@ import streamlit as st
 
 # Page configuration
 st.set_page_config(
-    page_title="MonsoonCast | AI Research Framework",
+    page_title="MonsoonCast | Extreme Rainfall ML",
     page_icon="🌧️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -48,15 +48,15 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">MonsoonCast: Extreme Monsoon Rainfall AI Framework</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">MonsoonCast: Extreme Monsoon Rainfall ML Framework</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">Research-Grade Probabilistic Machine Learning & Uncertainty Quantification over India</div>',
+    '<div class="sub-header">An Independent Machine Learning Project for Extreme Rainfall Prediction and Uncertainty Estimation over India</div>',
     unsafe_allow_html=True
 )
 
 st.markdown("""
 <div class="callout">
-<b>Primary Research Objective:</b> Evaluating whether physics-informed machine learning ensembles can reliably forecast extreme Indian Summer Monsoon (JJAS) precipitation events, improve probability calibration, and quantify predictive uncertainty compared with classical climatological and statistical baselines.
+<b>Project Overview:</b> MonsoonCast is an independent machine learning project exploring extreme monsoon rainfall prediction and probabilistic uncertainty estimation over India. It investigates how historical rainfall observations and atmospheric variables can be processed and used with machine learning models and ensemble techniques to estimate the likelihood of extreme rainfall events.
 </div>
 """, unsafe_allow_html=True)
 

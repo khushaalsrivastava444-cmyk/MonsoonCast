@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "monsooncast"
 version = "0.3.0"
-description = "A Research-Grade AI Ensemble Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Quantification over India"
+description = "An independent ML framework exploring extreme monsoon rainfall prediction, ensemble modelling and probabilistic uncertainty estimation over India"
 readme = "README.md"
 authors = [
     { name = "Khushaal Srivastava", email = "khushaalsrivastava444@gmail.com" }

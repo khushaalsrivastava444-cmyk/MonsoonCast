@@ -18,9 +18,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("monsooncast_api")
 
 app = FastAPI(
-    title="MonsoonCast Research API",
-    description="Scientific API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
-    version="0.1.0",
+    title="MonsoonCast API",
+    description="An independent machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
