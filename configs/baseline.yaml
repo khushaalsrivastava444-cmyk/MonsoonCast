@@ -1,0 +1,47 @@
+# Baseline Models Experiment Configuration
+experiment:
+  id: "exp_baseline_central_india"
+  description: "Climatology, Persistence, and Logistic Regression baselines on Central India"
+  seed: 42
+  
+data_config: "configs/data.yaml"
+
+features:
+  lags: [1, 2, 3, 7]
+  rolling_sums: [3, 7]
+  rolling_max: [7]
+  rolling_mean: [7]
+  include_spatial_neighbors: true
+  include_climatology: true
+  include_cyclical_calendar: true
+
+models:
+  climatology:
+    enabled: true
+  persistence:
+    enabled: true
+    lag: 1
+  logistic_regression:
+    enabled: true
+    penalty: "l2"
+    C: 1.0
+    class_weight: "balanced"
+    max_iter: 1000
+  random_forest:
+    enabled: true
+    n_estimators: 100
+    max_depth: 8
+    class_weight: "balanced"
+    n_jobs: -1
+  xgboost_classifier:
+    enabled: true
+    n_estimators: 100
+    max_depth: 5
+    learning_rate: 0.05
+    scale_pos_weight: 5.0
+    n_jobs: -1
+
+evaluation:
+  metric_threshold: 0.5
+  optimize_threshold_on_val: true
+  n_bootstrap_samples: 500

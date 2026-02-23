@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=65.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monsooncast"
+version = "0.1.0"
+description = "A Research-Grade AI Ensemble Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Quantification over India"
+readme = "README.md"
+authors = [
+    { name = "Khushaal Srivastava", email = "khushaalsrivastava444@gmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = [
+    "climate-ai",
+    "monsoon-rainfall",
+    "extreme-weather-prediction",
+    "uncertainty-quantification",
+    "probabilistic-forecasting",
+    "machine-learning-ensemble",
+    "meteorology"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "scipy>=1.12.0",
+    "scikit-learn>=1.4.0",
+    "xgboost>=2.0.0",
+    "xarray>=2024.1.0",
+    "netCDF4>=1.6.5",
+    "h5netcdf>=1.3.0",
+    "pydantic>=2.6.0",
+    "pyyaml>=6.0.1",
+    "joblib>=1.3.2",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "streamlit>=1.32.0",
+    "plotly>=5.19.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0"
+]
+
+[project.optional-dependencies]
+deeplearning = [
+    "torch>=2.2.0"
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.3.0",
+    "httpx>=0.27.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning"
+]

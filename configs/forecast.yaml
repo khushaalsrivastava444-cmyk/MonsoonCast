@@ -1,0 +1,18 @@
+# Mode B: Forecast-Informed Ensemble Post-Processing Configuration
+# NOTE: Requires valid NWP forecast inputs (e.g., TIGGE) with distinct issue time and lead time.
+experiment:
+  id: "exp_nwp_forecast_informed"
+  description: "Post-processing numerical weather ensemble predictions with issue-time constraints"
+  seed: 42
+
+forecast:
+  source: "tigge"
+  model: "ecmwf"
+  lead_times_hours: [24, 48, 72]
+  ensemble_members: 10
+  variables: ["total_precipitation"]
+  enforce_issue_time_alignment: true
+
+evaluation:
+  metric_threshold: 0.5
+  status: "unvalidated_pending_real_nwp_archive"

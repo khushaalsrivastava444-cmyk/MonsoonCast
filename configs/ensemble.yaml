@@ -1,0 +1,34 @@
+# Probabilistic Ensemble & Uncertainty Quantification Configuration
+experiment:
+  id: "exp_ensemble_calibrated"
+  description: "Probabilistic ensemble with Platt and Isotonic calibration"
+  seed: 42
+  
+data_config: "configs/data.yaml"
+
+ensemble:
+  # Models to combine in probability space
+  members:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost_classifier"
+  
+  # Weighting schemes: 'equal', 'val_optimized', 'stacking'
+  weighting_scheme: "val_optimized"
+  
+  # Probability calibration
+  calibration:
+    enabled: true
+    method: "isotonic"  # 'platt' or 'isotonic'
+    fit_partition: "val"  # strictly fit on validation split
+    
+  # Quantile regression for rainfall amounts
+  quantile_regression:
+    enabled: true
+    quantiles: [0.10, 0.50, 0.90]
+    n_estimators: 100
+
+evaluation:
+  metric_threshold: 0.5
+  optimize_threshold_on_val: true
+  n_bootstrap_samples: 500
