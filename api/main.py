@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -64,6 +65,12 @@ class GridPointFeatures(BaseModel):
     climatology_mean: float = Field(default=0.0, ge=0.0, description="Historical climatological mean (mm/day)")
     doy_sin: Optional[float] = None
     doy_cos: Optional[float] = None
+    era5_msl: Optional[float] = Field(default=None, description="Reanalysis mean sea level pressure (hPa)")
+    era5_tcwv: Optional[float] = Field(default=None, description="Total column water vapour (kg/m2)")
+    era5_u850: Optional[float] = Field(default=None, description="Zonal wind at 850 hPa (m/s)")
+    era5_v850: Optional[float] = Field(default=None, description="Meridional wind at 850 hPa (m/s)")
+    era5_z500: Optional[float] = Field(default=None, description="Geopotential height at 500 hPa (gpm)")
+    era5_wind_speed850: Optional[float] = Field(default=None, description="Wind speed at 850 hPa (m/s)")
 
 
 class EventProbabilityRequest(BaseModel):
@@ -178,7 +185,7 @@ def get_experiment_metrics(experiment_id: str):
 def predict_event_probability(req: EventProbabilityRequest):
     """Predict extreme rainfall event probability with predictive uncertainty quantification."""
     models, feature_cols = get_models()
-    
+
     # Build dataframe from incoming samples
     rows = []
     for s in req.samples:
@@ -189,21 +196,22 @@ def predict_event_probability(req: EventProbabilityRequest):
             d["doy_cos"] = np.cos(2.0 * np.pi * d["doy"] / 365.25)
         rows.append(d)
     df_in = pd.DataFrame(rows)
-    
-    # Ensure all feature columns exist
+
+    # Ensure all feature columns exist and replace missing/None with 0.0
     for col in feature_cols:
         if col not in df_in.columns:
             df_in[col] = 0.0
+    df_in = df_in.fillna(0.0)
 
     if req.model_name == "ensemble":
         ens = models["ensemble"]
         unc_res = ens.predict_with_uncertainty(df_in)
-        
+
         member_preds_dict = {
             k: [round(float(v), 4) for v in vals]
             for k, vals in unc_res["member_probs"].items()
         }
-        
+
         return EventProbabilityResponse(
             model_name="ensemble",
             calibrated_probability=[round(float(p), 4) for p in unc_res["calibrated_prob"]],
@@ -233,7 +241,7 @@ def predict_rainfall_quantiles(req: QuantileRequest):
     models, feature_cols = get_models()
     if "quantile_regressor" not in models:
         raise HTTPException(status_code=404, detail="Quantile regressor model not trained.")
-        
+
     rows = []
     for s in req.samples:
         d = s.model_dump()
@@ -249,9 +257,9 @@ def predict_rainfall_quantiles(req: QuantileRequest):
 
     q_reg = models["quantile_regressor"]
     q_preds = q_reg.predict_quantiles(df_in)
-    
+
     out_dict = {}
     for q_val, arr in q_preds.items():
         out_dict[f"q_{int(q_val*100):02d}"] = [round(float(x), 2) for x in arr]
-        
+
     return QuantileResponse(quantiles=out_dict)

@@ -95,6 +95,7 @@ def compute_rolling_features(
 def build_tabular_feature_dataset(
     ds: xr.Dataset,
     train_climatology: xr.DataArray | None = None,
+    era5_ds: xr.Dataset | None = None,
     threshold: float = 50.0,
     lead_days: int = 1,
     feature_config: FeatureConfig | None = None,
@@ -119,6 +120,11 @@ def build_tabular_feature_dataset(
     times = pd.to_datetime(ds["time"].values)
     lats = ds["lat"].values
     lons = ds["lon"].values
+
+    # Pre-check available ERA5 variables
+    era5_vars = []
+    if era5_ds is not None:
+        era5_vars = [v for v in ["msl", "tcwv", "u850", "v850", "z500"] if v in era5_ds]
 
     # Process each grid cell across time
     for lat_val in lats:
@@ -175,6 +181,16 @@ def build_tabular_feature_dataset(
             if cfg.include_cyclical_calendar:
                 df_cell["doy_sin"] = np.sin(2.0 * np.pi * df_cell["doy"] / 365.25)
                 df_cell["doy_cos"] = np.cos(2.0 * np.pi * df_cell["doy"] / 365.25)
+
+            # Atmospheric reanalysis predictors (ERA5 mode)
+            if era5_vars and era5_ds is not None:
+                for var in era5_vars:
+                    era5_val = era5_ds[var].sel(lat=lat_val, lon=lon_val, method="nearest").values
+                    df_cell[f"era5_{var}"] = era5_val
+                if "u850" in era5_vars and "v850" in era5_vars:
+                    u_arr = df_cell["era5_u850"].values
+                    v_arr = df_cell["era5_v850"].values
+                    df_cell["era5_wind_speed850"] = np.sqrt(u_arr**2 + v_arr**2)
 
             # Next-day Target (strictly shifted backwards by lead_days)
             target_amount = rain_1d.shift(-lead_days)

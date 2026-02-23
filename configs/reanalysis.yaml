@@ -1,0 +1,66 @@
+# Mode A Extension: Retrospective Diagnostic Experiment with Coupled Atmospheric Reanalysis (ERA5)
+# NOTE: Uses same-day atmospheric state predictors. Explicitly labeled as retrospective diagnostic association,
+# not an operational day-ahead forecast.
+
+experiment:
+  id: "exp_era5_diagnostic_central_india"
+  description: "Retrospective physical diagnostic experiment coupling antecedent rainfall with ERA5 reanalysis state variables"
+  seed: 42
+  diagnostic_mode: "retrospective_association"
+
+data_config: "configs/data.yaml"
+
+reanalysis:
+  enabled: true
+  source: "era5"
+  variables:
+    - "msl"    # Mean Sea Level Pressure (hPa)
+    - "tcwv"   # Total Column Water Vapour (kg/m2)
+    - "u850"   # Zonal wind at 850 hPa (m/s)
+    - "v850"   # Meridional wind at 850 hPa (m/s)
+    - "z500"   # Geopotential Height at 500 hPa (gpm)
+
+features:
+  lags: [1, 2, 3, 7]
+  rolling_sums: [3, 7]
+  rolling_max: [7]
+  rolling_mean: [7]
+  include_spatial_neighbors: true
+  include_climatology: true
+  include_cyclical_calendar: true
+  include_reanalysis_predictors: true
+
+models:
+  climatology:
+    enabled: true
+  persistence:
+    enabled: true
+  logistic_regression:
+    enabled: true
+    penalty: "l2"
+    C: 1.0
+  random_forest:
+    enabled: true
+    n_estimators: 100
+    max_depth: 8
+  xgboost_classifier:
+    enabled: true
+    n_estimators: 100
+    max_depth: 5
+    scale_pos_weight: 5.0
+
+ensemble:
+  members:
+    - "logistic_regression"
+    - "random_forest"
+    - "xgboost_classifier"
+  weighting_scheme: "val_optimized"
+  calibration:
+    enabled: true
+    method: "isotonic"
+    fit_partition: "val"
+
+evaluation:
+  metric_threshold: 0.5
+  optimize_threshold_on_val: true
+  n_bootstrap_samples: 500

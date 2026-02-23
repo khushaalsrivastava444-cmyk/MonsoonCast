@@ -57,6 +57,7 @@ class FeatureConfig(BaseModel):
     include_spatial_neighbors: bool = True
     include_climatology: bool = True
     include_cyclical_calendar: bool = True
+    include_reanalysis_predictors: bool = False
 
 
 class ModelHyperparameters(BaseModel):

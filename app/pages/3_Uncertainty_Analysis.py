@@ -2,11 +2,10 @@
 
 import json
 from pathlib import Path
-import streamlit as st
+
 import pandas as pd
-import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 
 st.set_page_config(page_title="Uncertainty Analysis | MonsoonCast", page_icon="🎯", layout="wide")
 
@@ -34,7 +33,7 @@ col1, col2 = st.columns([1.5, 1])
 
 with col1:
     fig_rel = go.Figure()
-    
+
     # 45-degree reference line
     fig_rel.add_trace(
         go.Scatter(
@@ -44,7 +43,7 @@ with col1:
             name="Perfect Calibration"
         )
     )
-    
+
     colors = {
         "climatology": "#718096",
         "persistence": "#e53e3e",
@@ -53,12 +52,12 @@ with col1:
         "xgboost_classifier": "#38a169",
         "ensemble": "#805ad5"
     }
-    
+
     for m_name, rel_data in rel_curves.items():
         bin_means = rel_data["bin_means"]
         bin_fracs = rel_data["bin_fracs"]
         ece = rel_data.get("ece", 0.0)
-        
+
         fig_rel.add_trace(
             go.Scatter(
                 x=bin_means,
@@ -69,7 +68,7 @@ with col1:
                 marker=dict(size=7)
             )
         )
-        
+
     fig_rel.update_layout(
         title="Reliability Curves on Held-Out Test Set",
         xaxis_title="Forecast Probability",
@@ -88,7 +87,7 @@ with col2:
         ece_list.append({"Model": m_name, "ECE": rel_data.get("ece", 0.0)})
     df_ece = pd.DataFrame(ece_list).sort_values("ECE")
     st.dataframe(df_ece, use_container_width=True)
-    
+
     st.markdown("""
     **Interpretation:**
     - Models lying **above the diagonal** are *underconfident* (events occur more frequently than predicted).
@@ -103,7 +102,7 @@ st.subheader("2. Conditional Rainfall Prediction Intervals (Quantile Regression)
 if "quantile_regressor" in eval_results:
     q_dict = eval_results["quantile_regressor"]
     col_q1, col_q2, col_q3 = st.columns(3)
-    
+
     with col_q1:
         st.metric("Nominal Interval Coverage", "80.0%", "10th to 90th Quantile")
     with col_q2:
@@ -121,5 +120,5 @@ st.markdown("---")
 st.subheader("3. Ensemble Member Spread & Disagreement")
 st.markdown("""
 During synoptic monsoon depressions, convective initiation exhibits strong chaotic sensitivity.
-The ensemble spread $\sigma = \sqrt{\frac{1}{K}\sum(p_k - \bar{p})^2}$ provides a physically motivated metric of epistemic uncertainty, signaling when the operational forecast carries elevated risk of severe prediction error.
+The ensemble spread $\\sigma = \\sqrt{\frac{1}{K}\\sum(p_k - \bar{p})^2}$ provides a physically motivated metric of epistemic uncertainty, signaling when the operational forecast carries elevated risk of severe prediction error.
 """)

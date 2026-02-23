@@ -43,17 +43,20 @@ def main():
     # Step 1: Prepare Data
     logger.info(">>> Step 1/3: Preparing data and chronological partitions...")
     cmd_prep = [sys.executable, "scripts/prepare_data.py", "--config", cfg.data_config_path]
-    res_prep = subprocess.run(cmd_prep, check=True)
+    if getattr(cfg.features, "include_reanalysis_predictors", False):
+        logger.info("Atmospheric reanalysis enabled in config; including ERA5 predictors.")
+        cmd_prep.append("--include-era5")
+    subprocess.run(cmd_prep, check=True)
 
     # Step 2: Train Models
     logger.info(">>> Step 2/3: Training models and calibrating ensemble...")
     cmd_train = [sys.executable, "scripts/train.py", "--config", args.config]
-    res_train = subprocess.run(cmd_train, check=True)
+    subprocess.run(cmd_train, check=True)
 
     # Step 3: Evaluate Models
     logger.info(">>> Step 3/3: Evaluating models on held-out test set...")
     cmd_eval = [sys.executable, "scripts/evaluate.py"]
-    res_eval = subprocess.run(cmd_eval, check=True)
+    subprocess.run(cmd_eval, check=True)
 
     # Record experiment registry
     results_file = Path("artifacts/metrics/evaluation_results.json")

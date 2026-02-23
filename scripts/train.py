@@ -8,19 +8,19 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+
 import joblib
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from monsooncast.config import load_config
 from monsooncast.models.baselines import (
-    SeasonalClimatologyBaseline,
-    PersistenceBaseline,
     LogisticRegressionBaseline,
-    RidgeRainfallRegressor,
+    PersistenceBaseline,
+    SeasonalClimatologyBaseline,
 )
 from monsooncast.models.classical import (
     RandomForestExtremeClassifier,
@@ -28,7 +28,7 @@ from monsooncast.models.classical import (
     XGBoostQuantileRegressor,
 )
 from monsooncast.models.ensemble import WeightedProbabilityEnsemble
-from monsooncast.models.neural import PyTorchMLPClassifier, HAS_TORCH
+from monsooncast.models.neural import HAS_TORCH, PyTorchMLPClassifier
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("train")

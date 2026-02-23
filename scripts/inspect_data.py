@@ -7,14 +7,15 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+
 import numpy as np
 import xarray as xr
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from monsooncast.data.loaders import load_imd_netcdf, generate_synthetic_monsoon_dataset, standardize_dataset_coords
-from monsooncast.data.validation import validate_coordinates, validate_units, audit_missing_values
+from monsooncast.data.loaders import generate_synthetic_monsoon_dataset, standardize_dataset_coords
+from monsooncast.data.validation import audit_missing_values
 
 
 def main():
@@ -41,20 +42,20 @@ def main():
         else:
             file_path = str(default_synth)
 
-    print(f"\n=======================================================")
-    print(f"      MONSOONCAST METEOROLOGICAL DATA INSPECTION       ")
-    print(f"=======================================================")
+    print("\n=======================================================")
+    print("      MONSOONCAST METEOROLOGICAL DATA INSPECTION       ")
+    print("=======================================================")
     print(f"Target File: {file_path}")
 
     ds = xr.open_dataset(file_path)
     ds = standardize_dataset_coords(ds)
     var_name = args.var if args.var in ds else list(ds.data_vars)[0]
 
-    print(f"\n[1] DATASET METADATA:")
+    print("\n[1] DATASET METADATA:")
     for k, v in ds.attrs.items():
         print(f"  - {k}: {v}")
 
-    print(f"\n[2] COORDINATES & DIMENSIONS:")
+    print("\n[2] COORDINATES & DIMENSIONS:")
     for dim, size in ds.sizes.items():
         print(f"  - {dim}: {size}")
 
@@ -76,7 +77,7 @@ def main():
     data_arr = ds[var_name].values
     valid_data = data_arr[~np.isnan(data_arr) & (data_arr != -999.0)]
     if len(valid_data) > 0:
-        print(f"\n[4] METEOROLOGICAL STATISTICS (Valid grid-days):")
+        print("\n[4] METEOROLOGICAL STATISTICS (Valid grid-days):")
         print(f"  - Mean daily rainfall: {np.mean(valid_data):.2f} mm/day")
         print(f"  - Median daily rainfall: {np.median(valid_data):.2f} mm/day")
         print(f"  - Std deviation: {np.std(valid_data):.2f} mm/day")

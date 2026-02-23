@@ -198,6 +198,111 @@ def generate_synthetic_monsoon_dataset(
     return ds
 
 
+def generate_synthetic_era5_dataset(
+    output_path: str | Path | None = None,
+    rainfall_ds: xr.Dataset | None = None,
+    start_year: int = 2010,
+    end_year: int = 2023,
+    lat_bounds: tuple[float, float] = (18.0, 25.0),
+    lon_bounds: tuple[float, float] = (73.0, 82.0),
+    resolution: float = 0.5,
+    seed: int = 42,
+) -> xr.Dataset:
+    """Generate physically plausible synthetic atmospheric reanalysis fields.
+
+    Coupled dynamics:
+    - High TCWV (55-70 kg/m2) preceding heavy precipitation.
+    - Low-pressure anomalies (monsoon depression trough) down to 995 hPa.
+    - Strong southwesterly low-level jet (u850 ~ 12-25 m/s, v850 ~ 5-15 m/s).
+    - Lowered geopotential height at 500 hPa (z500 ~ 5820-5880 gpm).
+    """
+    logger.info("Generating synthetic atmospheric reanalysis (ERA5) test fixture...")
+    rng = np.random.default_rng(seed)
+
+    if rainfall_ds is not None:
+        times = pd.DatetimeIndex(rainfall_ds["time"].values)
+        lats = rainfall_ds["lat"].values
+        lons = rainfall_ds["lon"].values
+        rain_vals = rainfall_ds["rain"].values  # (time, lat, lon)
+    else:
+        date_list = []
+        for year in range(start_year, end_year + 1):
+            dates = pd.date_range(start=f"{year}-06-01", end=f"{year}-09-30", freq="D")
+            date_list.extend(dates)
+        times = pd.DatetimeIndex(date_list)
+        lats = np.arange(lat_bounds[0], lat_bounds[1] + resolution, resolution)
+        lons = np.arange(lon_bounds[0], lon_bounds[1] + resolution, resolution)
+        rain_vals = np.zeros((len(times), len(lats), len(lons)))
+
+    n_time, n_lat, n_lon = len(times), len(lats), len(lons)
+    lon_grid, lat_grid = np.meshgrid(lons, lats)
+
+    # Base monsoon climate state
+    # MSLP: ~1004 hPa background, decreasing towards north (monsoon trough at ~24N)
+    base_msl = 1008.0 - (lat_grid - 18.0) * 0.8  # (lat, lon)
+    # TCWV: ~45 kg/m2 background, higher towards south and coasts
+    base_tcwv = 48.0 + (25.0 - lat_grid) * 0.5 - (lon_grid - 73.0) * 0.4
+    # U850: Westerly monsoon jet (~12 m/s)
+    base_u850 = 12.0 + (lat_grid - 18.0) * 0.3
+    # V850: Southerly component (~6 m/s)
+    base_v850 = 6.0 - (lat_grid - 18.0) * 0.2
+    # Z500: ~5860 gpm
+    base_z500 = 5860.0 + (lat_grid - 18.0) * 2.0
+
+    msl_arrays = []
+    tcwv_arrays = []
+    u850_arrays = []
+    v850_arrays = []
+    z500_arrays = []
+
+    for t in range(n_time):
+        day_rain = rain_vals[t] if rain_vals is not None else np.zeros((n_lat, n_lon))
+        # Atmospheric depression anomaly linked with rainfall intensity
+        rain_norm = np.clip(day_rain / 50.0, 0.0, 2.5)
+
+        # MSLP anomaly: drop by up to 10 hPa in heavy rain regions
+        msl_t = base_msl - 6.0 * rain_norm + rng.normal(0, 0.8, size=(n_lat, n_lon))
+        # TCWV: surge by up to 18 kg/m2 during moist convection
+        tcwv_t = base_tcwv + 12.0 * rain_norm + rng.normal(0, 1.5, size=(n_lat, n_lon))
+        tcwv_t = np.clip(tcwv_t, 30.0, 75.0)
+        # Low-level jet acceleration: U850 increases by up to 8 m/s
+        u850_t = base_u850 + 5.0 * rain_norm + rng.normal(0, 1.2, size=(n_lat, n_lon))
+        v850_t = base_v850 + 3.0 * rain_norm + rng.normal(0, 1.0, size=(n_lat, n_lon))
+        # Mid-level geopotential height dip
+        z500_t = base_z500 - 20.0 * rain_norm + rng.normal(0, 3.0, size=(n_lat, n_lon))
+
+        msl_arrays.append(msl_t.astype(np.float32))
+        tcwv_arrays.append(tcwv_t.astype(np.float32))
+        u850_arrays.append(u850_t.astype(np.float32))
+        v850_arrays.append(v850_t.astype(np.float32))
+        z500_arrays.append(z500_t.astype(np.float32))
+
+    ds_era5 = xr.Dataset(
+        data_vars={
+            "msl": (["time", "lat", "lon"], np.stack(msl_arrays, axis=0), {"units": "hPa", "long_name": "Mean Sea Level Pressure"}),
+            "tcwv": (["time", "lat", "lon"], np.stack(tcwv_arrays, axis=0), {"units": "kg m**-2", "long_name": "Total Column Water Vapour"}),
+            "u850": (["time", "lat", "lon"], np.stack(u850_arrays, axis=0), {"units": "m s**-1", "long_name": "Zonal Wind at 850 hPa"}),
+            "v850": (["time", "lat", "lon"], np.stack(v850_arrays, axis=0), {"units": "m s**-1", "long_name": "Meridional Wind at 850 hPa"}),
+            "z500": (["time", "lat", "lon"], np.stack(z500_arrays, axis=0), {"units": "gpm", "long_name": "Geopotential Height at 500 hPa"}),
+        },
+        coords={"time": times, "lat": lats, "lon": lons},
+        attrs={
+            "title": "MonsoonCast Synthetic Coupled ERA5 Atmospheric Reanalysis",
+            "is_synthetic": 1,
+            "synthetic_disclaimer": "SYNTHETIC FIXTURE FOR PIPELINE TESTING ONLY. DO NOT USE AS REAL REANALYSIS.",
+            "source": "MonsoonCast Reanalysis Generator",
+        },
+    )
+
+    if output_path is not None:
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        ds_era5.to_netcdf(out)
+        logger.info(f"Saved synthetic ERA5 dataset to: {out}")
+
+    return ds_era5
+
+
 class ERA5Adapter:
     """Adapter for ERA5 atmospheric reanalysis single-level and pressure-level NetCDF files."""
 
@@ -208,21 +313,33 @@ class ERA5Adapter:
         """Check if ERA5 NetCDF files exist locally."""
         return self.data_dir.is_dir() and any(self.data_dir.glob("*.nc"))
 
-    def load_variables(self, variables: list[str], start_date: str, end_date: str) -> xr.Dataset:
-        """Load ERA5 variables aligned with the target spatial-temporal grid."""
-        if not self.is_available():
+    def load_variables(
+        self,
+        variables: list[str] | None = None,
+        generate_fixture_if_missing: bool = True,
+        rainfall_ds: xr.Dataset | None = None,
+    ) -> xr.Dataset:
+        """Load ERA5 atmospheric variables aligned with target spatial domain."""
+        if self.is_available():
+            files = list(self.data_dir.glob("*.nc"))
+            logger.info(f"Loading {len(files)} local ERA5 NetCDF files from {self.data_dir}...")
+            ds = xr.open_mfdataset(files)
+            return standardize_dataset_coords(ds)
+        elif generate_fixture_if_missing:
+            logger.warning(
+                f"ERA5 data not found in {self.data_dir}. Generating synthetic coupled atmospheric reanalysis fixture..."
+            )
+            fixture_path = self.data_dir / "era5_synthetic_coupled.nc"
+            return generate_synthetic_era5_dataset(output_path=fixture_path, rainfall_ds=rainfall_ds)
+        else:
             raise FileNotFoundError(
                 f"ERA5 reanalysis files not found in {self.data_dir}. "
                 "Download ERA5 single/pressure levels from Copernicus CDS as documented in data/README.md."
             )
-        # Placeholder for real ERA5 loader
-        files = list(self.data_dir.glob("*.nc"))
-        ds = xr.open_mfdataset(files)
-        return standardize_dataset_coords(ds)
 
 
 class ForecastEnsembleAdapter:
-    """Adapter for Archived Numerical Weather Prediction (NWP) Ensemble Forecasts (e.g., TIGGE).
+    """Adapter for Numerical Weather Prediction (NWP) Ensemble Member Forecasts (e.g., TIGGE/ECMWF).
 
     Enforces strict issue-time, lead-time, and valid-time causality:
     valid_time = initialization_time + lead_time
@@ -234,13 +351,66 @@ class ForecastEnsembleAdapter:
     def is_available(self) -> bool:
         return self.data_dir.is_dir() and any(self.data_dir.glob("*.nc"))
 
-    def load_forecasts(
-        self, initialization_times: list[pd.Timestamp], lead_time_hours: int = 24
+    def generate_synthetic_forecasts(
+        self,
+        obs_ds: xr.Dataset,
+        lead_time_hours: int = 24,
+        n_members: int = 10,
+        output_path: str | Path | None = None,
+        seed: int = 42,
     ) -> xr.Dataset:
-        """Load ensemble forecasts initialized strictly before target valid time."""
-        if not self.is_available():
-            raise FileNotFoundError(
-                f"Archived NWP forecast data not found in {self.data_dir}. "
-                "Archived TIGGE forecasts required for Mode B evaluation."
-            )
-        raise NotImplementedError("Mode B requires verified local TIGGE NetCDF files.")
+        """Generate synthetic NWP ensemble forecasts with issue-time and lead-time alignment.
+
+        Simulates ensemble member forecasts around observed precipitation with
+        realistic chaotic dispersion:
+        f_m(t_valid) = R(t_valid) + bias + noise_m
+        """
+        logger.info(f"Generating synthetic NWP {n_members}-member forecast ensemble (lead={lead_time_hours}h)...")
+        rng = np.random.default_rng(seed)
+
+        valid_times = pd.DatetimeIndex(obs_ds["time"].values)
+        init_times = valid_times - pd.Timedelta(hours=lead_time_hours)
+        lats = obs_ds["lat"].values
+        lons = obs_ds["lon"].values
+        rain_obs = obs_ds["rain"].values  # (time, lat, lon)
+
+        members = [f"mem_{m:02d}" for m in range(1, n_members + 1)]
+        forecast_members = []
+
+        for m in range(n_members):
+            # Member perturbation (lead-time dependent uncertainty)
+            spread_factor = 0.25 * (lead_time_hours / 24.0)
+            member_noise = rng.normal(0.0, 4.0 + spread_factor * rain_obs, size=rain_obs.shape)
+            member_fc = np.clip(rain_obs + member_noise, 0.0, None)
+            forecast_members.append(member_fc.astype(np.float32))
+
+        fc_tensor = np.stack(forecast_members, axis=1)  # (time, member, lat, lon)
+
+        ds_fc = xr.Dataset(
+            data_vars={
+                "tp": (["time", "member", "lat", "lon"], fc_tensor, {"units": "mm", "long_name": "Total Precipitation Forecast"}),
+                "ens_mean": (["time", "lat", "lon"], np.mean(fc_tensor, axis=1), {"units": "mm"}),
+                "ens_spread": (["time", "lat", "lon"], np.std(fc_tensor, axis=1), {"units": "mm"}),
+            },
+            coords={
+                "time": valid_times,
+                "initialization_time": ("time", init_times),
+                "member": members,
+                "lat": lats,
+                "lon": lons,
+            },
+            attrs={
+                "title": f"MonsoonCast Synthetic NWP Forecast Ensemble ({lead_time_hours}h lead)",
+                "lead_time_hours": lead_time_hours,
+                "n_members": n_members,
+                "is_synthetic": 1,
+            },
+        )
+
+        if output_path is not None:
+            out = Path(output_path)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            ds_fc.to_netcdf(out)
+            logger.info(f"Saved synthetic forecast ensemble to: {out}")
+
+        return ds_fc

@@ -8,6 +8,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+
 import pandas as pd
 import xarray as xr
 
@@ -15,13 +16,16 @@ import xarray as xr
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from monsooncast.config import load_data_config
-from monsooncast.data.loaders import load_imd_netcdf, generate_synthetic_monsoon_dataset
-from monsooncast.data.preprocessing import align_and_preprocess_dataset
-from monsooncast.features.engineering import (
-    compute_training_climatology,
-    build_tabular_feature_dataset,
+from monsooncast.data.loaders import (
+    ERA5Adapter,
+    generate_synthetic_monsoon_dataset,
 )
+from monsooncast.data.preprocessing import align_and_preprocess_dataset
 from monsooncast.evaluation.validation import chronological_split, verify_no_leakage
+from monsooncast.features.engineering import (
+    build_tabular_feature_dataset,
+    compute_training_climatology,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("prepare_data")
@@ -30,6 +34,7 @@ logger = logging.getLogger("prepare_data")
 def main():
     parser = argparse.ArgumentParser(description="Prepare features and chronological splits.")
     parser.add_argument("--config", type=str, default="configs/data.yaml", help="Path to data config YAML")
+    parser.add_argument("--include-era5", action="store_true", help="Include coupled atmospheric reanalysis variables (ERA5)")
     args = parser.parse_args()
 
     cfg = load_data_config(args.config)
@@ -70,10 +75,17 @@ def main():
     train_climatology = compute_training_climatology(ds_train)
 
     # 4. Feature Engineering
+    era5_ds = None
+    if args.include_era5:
+        logger.info("Coupling atmospheric reanalysis predictors (ERA5)...")
+        era5_adapter = ERA5Adapter(data_dir=Path(cfg.raw_dir) / "era5")
+        era5_ds = era5_adapter.load_variables(rainfall_ds=ds_monsoon)
+
     logger.info("Constructing lagged, rolling, and spatial neighborhood features...")
     df_features = build_tabular_feature_dataset(
         ds=ds_monsoon,
         train_climatology=train_climatology,
+        era5_ds=era5_ds,
         threshold=cfg.target.default_threshold,
         lead_days=cfg.target.lead_days
     )

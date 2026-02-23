@@ -5,9 +5,9 @@ An AI Ensemble Framework for Extreme Monsoon Rainfall Prediction and Uncertainty
 
 import json
 from pathlib import Path
-import streamlit as st
+
 import pandas as pd
-import numpy as np
+import streamlit as st
 
 # Page configuration
 st.set_page_config(
@@ -86,18 +86,18 @@ tab_overview, tab_architecture, tab_governance = st.tabs(["Research Overview", "
 
 with tab_overview:
     st.subheader("Key Scientific Findings & Methodological Framework")
-    
+
     col_a, col_b = st.columns([1.5, 1])
-    
+
     with col_a:
-        st.markdown("""
+        st.markdown(r"""
         ### Research Questions Addressed:
         1. **Predictive Skill over Baselines:** Does gradient boosting and non-linear ensembling provide statistically significant gains in Critical Success Index (CSI) and Brier Skill Score (BSS) over climatological and persistence priors?
         2. **Probability Calibration:** Can validation-fitted isotonic regression and Platt scaling resolve severe model overconfidence on rare extreme events ($R \ge 50$ mm/day)?
         3. **Predictive Uncertainty:** Does inter-model spread accurately identify regions of high epistemic uncertainty during complex monsoon depressions?
         4. **Quantile Coverage:** Do conditional quantile gradient-boosted trees yield calibrated 80% prediction intervals for continuous rainfall amounts?
         """)
-        
+
     with col_b:
         if metrics_path.exists():
             with open(metrics_path, "r") as f:

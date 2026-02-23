@@ -9,6 +9,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -17,11 +18,11 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from monsooncast.evaluation.metrics import (
+    bootstrap_metric_ci,
     compute_classification_metrics,
-    compute_probabilistic_metrics,
     compute_rainfall_amount_metrics,
     evaluate_all_metrics,
-    bootstrap_metric_ci,
+    find_optimal_threshold,
 )
 from monsooncast.evaluation.reliability import compute_reliability_curve
 
@@ -51,12 +52,17 @@ def main():
     logger.info(f"Loading trained models from {art_file}...")
     payload = joblib.load(art_file)
     models = payload["models"]
-    feature_cols = payload["feature_cols"]
+    feature_cols = payload.get("feature_cols", [])
+    logger.info(f"Loaded {len(models)} models and {len(feature_cols)} predictor features from {art_file}")
 
     logger.info(f"Loading held-out test dataset from {test_path}...")
     df_test = pd.read_parquet(test_path)
     y_test_binary = df_test["target_event"].values
     y_test_amount = df_test["target_rainfall"].values
+
+    # Optional validation partition for tuning operating threshold without test leakage
+    val_path = test_path.parent / "val.parquet"
+    df_val = pd.read_parquet(val_path) if val_path.exists() else None
 
     logger.info(
         f"Evaluating on {len(df_test)} test examples. "
@@ -78,13 +84,22 @@ def main():
         model = models[name]
         probs = model.predict_proba(df_test)
 
+        # Operational decision threshold: tune on validation to maximize CSI without test leakage
+        if df_val is not None and len(df_val) > 0:
+            val_probs = model.predict_proba(df_val)
+            opt_thresh, _ = find_optimal_threshold(df_val["target_event"].values, val_probs, metric="csi")
+            eval_thresh = opt_thresh
+        else:
+            eval_thresh = args.threshold
+
         # Standard + meteorological + probabilistic metrics
         metrics = evaluate_all_metrics(
             y_true_binary=y_test_binary,
             y_prob=probs,
-            threshold=args.threshold,
+            threshold=eval_thresh,
             reference_brier=ref_brier
         )
+        metrics["eval_threshold"] = eval_thresh
 
         # Reliability curve & ECE
         rel_curve = compute_reliability_curve(y_test_binary, probs, n_bins=10)
@@ -95,7 +110,7 @@ def main():
         csi_low, csi_pt, csi_high = bootstrap_metric_ci(
             y_test_binary,
             probs,
-            metric_func=lambda yt, yp: compute_classification_metrics(yt, yp, threshold=args.threshold)["csi"],
+            metric_func=lambda yt, yp: compute_classification_metrics(yt, yp, threshold=eval_thresh)["csi"],
             n_bootstrap=200
         )
         metrics["csi_95ci"] = [csi_low, csi_high]
@@ -129,15 +144,17 @@ def main():
     print("\n" + "=" * 90)
     print("                MONSOONCAST RESEARCH EVALUATION RESULTS                ")
     print("=" * 90)
-    header = f"{'Model':<24} | {'PR-AUC':<8} | {'ROC-AUC':<8} | {'POD':<6} | {'FAR':<6} | {'CSI (95% CI)':<16} | {'BSS':<7} | {'ECE':<6}"
+    header = f"{'Model':<22} | {'Thresh':<6} | {'PR-AUC':<8} | {'ROC-AUC':<8} | {'POD':<6} | {'FAR':<6} | {'CSI (95% CI)':<16} | {'BSS':<7} | {'ECE':<6}"
     print(header)
-    print("-" * 90)
+    print("-" * 96)
 
     for m_name, m_res in comparison_results.items():
         if "pr_auc" in m_res:
             ci_str = f"{m_res.get('csi', 0):.3f} [{m_res.get('csi_95ci', [0,0])[0]:.2f}-{m_res.get('csi_95ci', [0,0])[1]:.2f}]"
+            thresh_val = m_res.get("eval_threshold", 0.5)
             row = (
-                f"{m_name:<24} | "
+                f"{m_name:<22} | "
+                f"{thresh_val:<6.3f} | "
                 f"{m_res.get('pr_auc', 0):.4f}   | "
                 f"{m_res.get('roc_auc', 0):.4f}   | "
                 f"{m_res.get('pod', 0):.3f}  | "
@@ -147,7 +164,7 @@ def main():
                 f"{m_res.get('ece', 0):.3f}"
             )
             print(row)
-    print("=" * 90)
+    print("=" * 96)
     logger.info(f"Results successfully saved to {results_path} and {reliability_path}")
 
 

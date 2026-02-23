@@ -237,3 +237,44 @@ def bootstrap_metric_ci(
     low = float(np.percentile(boot_samples, 100 * (alpha / 2.0)))
     high = float(np.percentile(boot_samples, 100 * (1.0 - alpha / 2.0)))
     return round(low, 4), round(point_est, 4), round(high, 4)
+
+
+def find_optimal_threshold(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    metric: str = "csi",
+    n_thresholds: int = 50,
+) -> tuple[float, float]:
+    """Find decision threshold maximizing a meteorological metric on validation data.
+
+    Returns:
+    - (best_threshold, best_metric_value)
+    Strict protocol: fit threshold on validation, never on test data.
+    """
+    y_t = np.asarray(y_true, dtype=int)
+    y_p = np.asarray(y_prob, dtype=float)
+
+    thresholds = np.linspace(0.01, 0.80, n_thresholds)
+    best_thresh = 0.5
+    best_score = -1.0
+
+    for tau in thresholds:
+        y_pred = (y_p >= tau).astype(int)
+        if metric == "csi":
+            tp = int(np.sum((y_t == 1) & (y_pred == 1)))
+            fp = int(np.sum((y_t == 0) & (y_pred == 1)))
+            fn = int(np.sum((y_t == 1) & (y_pred == 0)))
+            score = tp / (tp + fp + fn) if (tp + fp + fn) > 0 else 0.0
+        elif metric == "f1":
+            score = float(f1_score(y_t, y_pred, zero_division=0))
+        elif metric == "ets":
+            m = compute_meteorological_metrics(y_t, y_pred)
+            score = m["ets"]
+        else:
+            score = 0.0
+
+        if score > best_score:
+            best_score = score
+            best_thresh = tau
+
+    return round(float(best_thresh), 3), round(float(best_score), 4)
