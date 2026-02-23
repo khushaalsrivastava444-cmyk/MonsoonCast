@@ -27,7 +27,7 @@ def plot_spatial_rainfall_field(
         radius=25,
         center=dict(lat=float(sub["lat"].mean()), lon=float(sub["lon"].mean())),
         zoom=4.5,
-        mapbox_style="carto-positron",
+        mapbox_style="open-street-map",
         title=title or f"Monsoon Rainfall Field ({val_col}) - {date}",
         color_continuous_scale="Blues",
         range_color=[0, max(50.0, float(sub[val_col].max()))],
@@ -53,7 +53,7 @@ def plot_probability_map(
         size_max=12,
         zoom=4.5,
         center=dict(lat=float(df["lat"].mean()), lon=float(df["lon"].mean())),
-        mapbox_style="carto-positron",
+        mapbox_style="open-street-map",
         title=title,
     )
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})

@@ -89,8 +89,13 @@ with col_right:
 
 # Spatial Heatmap
 st.subheader("2. Spatial Rainfall Field")
+col_date, col_style = st.columns([3, 1])
+
 available_dates = df_year["time"].dt.strftime("%Y-%m-%d").unique()
-date_select = st.select_slider("Select Date to View Spatial Field", options=list(available_dates))
+with col_date:
+    date_select = st.select_slider("Select Date to View Spatial Field", options=list(available_dates))
+with col_style:
+    basemap_style = st.selectbox("Basemap Style", options=["open-street-map", "white-bg"], index=0)
 
 df_date = df_year[df_year["time"].dt.strftime("%Y-%m-%d") == date_select]
 
@@ -102,10 +107,10 @@ fig_map = px.density_mapbox(
     radius=30,
     center=dict(lat=float(df_date["lat"].mean()), lon=float(df_date["lon"].mean())),
     zoom=5,
-    mapbox_style="carto-positron",
+    mapbox_style=basemap_style,
     title=f"Central India Gridded Rainfall Field on {date_select}",
     color_continuous_scale="Blues",
-    range_color=[0, max(50.0, float(df_date["rain_current"].max()))]
+    range_color=[0, max(50.0, float(df_date["rain_current"].max()))],
 )
 fig_map.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
 st.plotly_chart(fig_map, use_container_width=True)
