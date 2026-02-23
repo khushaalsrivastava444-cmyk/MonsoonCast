@@ -83,3 +83,7 @@ artifacts/models/*.bin
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# PDF documents (keep binary PDFs out of repository)
+*.pdf
+docs/*.pdf
