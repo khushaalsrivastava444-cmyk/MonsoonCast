@@ -69,13 +69,14 @@ data/interim/*
 data/processed/*
 !data/processed/README.md
 !data/raw/synthetic_sample.nc
+!data/processed/test.parquet
 
 # Trained model binaries and checkpoints
-artifacts/models/*.joblib
 artifacts/models/*.pt
 artifacts/models/*.bin
 !artifacts/README.md
 !artifacts/models/README.md
+!artifacts/models/monsooncast_models.joblib
 
 # OS specific files
 .DS_Store
