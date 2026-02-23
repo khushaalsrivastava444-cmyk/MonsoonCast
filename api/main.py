@@ -234,149 +234,167 @@ def get_experiment_metrics(experiment_id: str):
 @app.post("/predict/event-probability", response_model=EventProbabilityResponse, tags=["Inference"])
 def predict_event_probability(req: EventProbabilityRequest):
     """Predict extreme rainfall event probability with predictive uncertainty quantification."""
-    models, feature_cols = get_models()
+    try:
+        models, feature_cols = get_models()
 
-    # Climatological monsoon background state for optional atmospheric reanalysis predictors
-    era5_defaults = {
-        "era5_msl": 1004.0,       # Mean sea level pressure (hPa)
-        "era5_tcwv": 48.0,        # Total column water vapour (kg/m2)
-        "era5_u850": 12.0,        # Zonal wind at 850 hPa (m/s)
-        "era5_v850": 6.0,         # Meridional wind at 850 hPa (m/s)
-        "era5_z500": 5860.0,      # Geopotential height at 500 hPa (gpm)
-        "era5_wind_speed850": 13.4,
-    }
-
-    rows = []
-    warnings_list = []
-    era5_imputed = False
-
-    for s in req.samples:
-        d = s.model_dump()
-        if d.get("doy_sin") is None:
-            d["doy_sin"] = float(np.sin(2.0 * np.pi * d["doy"] / 365.25))
-        if d.get("doy_cos") is None:
-            d["doy_cos"] = float(np.cos(2.0 * np.pi * d["doy"] / 365.25))
-
-        # Check and impute optional atmospheric variables with climatological background instead of blind zeros
-        for ef, default_val in era5_defaults.items():
-            if ef in feature_cols and d.get(ef) is None:
-                d[ef] = default_val
-                era5_imputed = True
-
-        if "era5_wind_speed850" in feature_cols and d.get("era5_wind_speed850") is None:
-            if d.get("era5_u850") is not None and d.get("era5_v850") is not None:
-                d["era5_wind_speed850"] = float(np.sqrt(d["era5_u850"]**2 + d["era5_v850"]**2))
-
-        rows.append(d)
-
-    df_in = pd.DataFrame(rows)
-
-    if era5_imputed:
-        warnings_list.append(
-            "ERA5 atmospheric reanalysis features were omitted in request; "
-            "imputed using mean monsoon climatological state (MSLP=1004 hPa, TCWV=48 kg/m2)."
-        )
-
-    # Validate that all required features are present and non-null (reject missing data with 422)
-    missing_cols = [c for c in feature_cols if c not in df_in.columns or df_in[c].isna().any()]
-    if missing_cols:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Missing required meteorological predictors: {missing_cols}. Missing inputs must not be omitted."
-        )
-
-    if req.model_name == "ensemble":
-        ens = models["ensemble"]
-        unc_res = ens.predict_with_uncertainty(df_in)
-
-        member_preds_dict = {
-            k: [round(float(v), 4) for v in vals]
-            for k, vals in unc_res["member_probs"].items()
+        # Climatological monsoon background state for optional atmospheric reanalysis predictors
+        era5_defaults = {
+            "era5_msl": 1004.0,       # Mean sea level pressure (hPa)
+            "era5_tcwv": 48.0,        # Total column water vapour (kg/m2)
+            "era5_u850": 12.0,        # Zonal wind at 850 hPa (m/s)
+            "era5_v850": 6.0,         # Meridional wind at 850 hPa (m/s)
+            "era5_z500": 5860.0,      # Geopotential height at 500 hPa (gpm)
+            "era5_wind_speed850": 13.4,
         }
 
-        return EventProbabilityResponse(
-            model_name="ensemble",
-            calibrated_probability=[round(float(p), 4) for p in unc_res["calibrated_prob"]],
-            epistemic_spread=[round(float(s), 4) for s in unc_res["spread"]],
-            disagreement_entropy=[round(float(e), 4) for e in unc_res["entropy"]],
-            member_predictions=member_preds_dict,
-            threshold_mm=50.0,
-            warnings=warnings_list if warnings_list else None,
-        )
-    elif req.model_name in models:
-        m = models[req.model_name]
-        probs = m.predict_proba(df_in)
-        return EventProbabilityResponse(
-            model_name=req.model_name,
-            calibrated_probability=[round(float(p), 4) for p in probs],
-            threshold_mm=50.0,
-            warnings=warnings_list if warnings_list else None,
-        )
-    else:
+        rows = []
+        warnings_list = []
+        era5_imputed = False
+
+        for s in req.samples:
+            d = s.model_dump()
+            if d.get("doy_sin") is None:
+                d["doy_sin"] = float(np.sin(2.0 * np.pi * d["doy"] / 365.25))
+            if d.get("doy_cos") is None:
+                d["doy_cos"] = float(np.cos(2.0 * np.pi * d["doy"] / 365.25))
+
+            # Check and impute optional atmospheric variables with climatological background instead of blind zeros
+            for ef, default_val in era5_defaults.items():
+                if ef in feature_cols and d.get(ef) is None:
+                    d[ef] = default_val
+                    era5_imputed = True
+
+            if "era5_wind_speed850" in feature_cols and d.get("era5_wind_speed850") is None:
+                if d.get("era5_u850") is not None and d.get("era5_v850") is not None:
+                    d["era5_wind_speed850"] = float(np.sqrt(d["era5_u850"]**2 + d["era5_v850"]**2))
+
+            rows.append(d)
+
+        df_in = pd.DataFrame(rows)
+
+        if era5_imputed:
+            warnings_list.append(
+                "ERA5 atmospheric reanalysis features were omitted in request; "
+                "imputed using mean monsoon climatological state (MSLP=1004 hPa, TCWV=48 kg/m2)."
+            )
+
+        # Validate that all required features are present and non-null (reject missing data with 422)
+        missing_cols = [c for c in feature_cols if c not in df_in.columns or df_in[c].isna().any()]
+        if missing_cols:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Missing required meteorological predictors: {missing_cols}. Missing inputs must not be omitted."
+            )
+
+        if req.model_name == "ensemble":
+            ens = models["ensemble"]
+            unc_res = ens.predict_with_uncertainty(df_in)
+
+            member_preds_dict = {
+                k: [round(float(v), 4) for v in vals]
+                for k, vals in unc_res["member_probs"].items()
+            }
+
+            return EventProbabilityResponse(
+                model_name="ensemble",
+                calibrated_probability=[round(float(p), 4) for p in unc_res["calibrated_prob"]],
+                epistemic_spread=[round(float(s), 4) for s in unc_res["spread"]],
+                disagreement_entropy=[round(float(e), 4) for e in unc_res["entropy"]],
+                member_predictions=member_preds_dict,
+                threshold_mm=50.0,
+                warnings=warnings_list if warnings_list else None,
+            )
+        elif req.model_name in models:
+            m = models[req.model_name]
+            probs = m.predict_proba(df_in)
+            return EventProbabilityResponse(
+                model_name=req.model_name,
+                calibrated_probability=[round(float(p), 4) for p in probs],
+                threshold_mm=50.0,
+                warnings=warnings_list if warnings_list else None,
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model '{req.model_name}' not available. Choose from: {list(models.keys())}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Inference error in predict_event_probability: {e}", exc_info=True)
         raise HTTPException(
-            status_code=400,
-            detail=f"Model '{req.model_name}' not available. Choose from: {list(models.keys())}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Inference error: {type(e).__name__}: {str(e)}"
         )
 
 
 @app.post("/predict/rainfall-quantiles", response_model=QuantileResponse, tags=["Inference"])
 def predict_rainfall_quantiles(req: QuantileRequest):
     """Predict conditional rainfall amount quantiles (10%, 50%, 90%) for interval estimation."""
-    models, feature_cols = get_models()
-    if "quantile_regressor" not in models:
-        raise HTTPException(status_code=404, detail="Quantile regressor model not trained.")
+    try:
+        models, feature_cols = get_models()
+        if "quantile_regressor" not in models:
+            raise HTTPException(status_code=404, detail="Quantile regressor model not trained.")
 
-    era5_defaults = {
-        "era5_msl": 1004.0,
-        "era5_tcwv": 48.0,
-        "era5_u850": 12.0,
-        "era5_v850": 6.0,
-        "era5_z500": 5860.0,
-        "era5_wind_speed850": 13.4,
-    }
+        era5_defaults = {
+            "era5_msl": 1004.0,
+            "era5_tcwv": 48.0,
+            "era5_u850": 12.0,
+            "era5_v850": 6.0,
+            "era5_z500": 5860.0,
+            "era5_wind_speed850": 13.4,
+        }
 
-    rows = []
-    warnings_list = []
-    era5_imputed = False
+        rows = []
+        warnings_list = []
+        era5_imputed = False
 
-    for s in req.samples:
-        d = s.model_dump()
-        if d.get("doy_sin") is None:
-            d["doy_sin"] = float(np.sin(2.0 * np.pi * d["doy"] / 365.25))
-        if d.get("doy_cos") is None:
-            d["doy_cos"] = float(np.cos(2.0 * np.pi * d["doy"] / 365.25))
+        for s in req.samples:
+            d = s.model_dump()
+            if d.get("doy_sin") is None:
+                d["doy_sin"] = float(np.sin(2.0 * np.pi * d["doy"] / 365.25))
+            if d.get("doy_cos") is None:
+                d["doy_cos"] = float(np.cos(2.0 * np.pi * d["doy"] / 365.25))
 
-        for ef, default_val in era5_defaults.items():
-            if ef in feature_cols and d.get(ef) is None:
-                d[ef] = default_val
-                era5_imputed = True
+            for ef, default_val in era5_defaults.items():
+                if ef in feature_cols and d.get(ef) is None:
+                    d[ef] = default_val
+                    era5_imputed = True
 
-        if "era5_wind_speed850" in feature_cols and d.get("era5_wind_speed850") is None:
-            if d.get("era5_u850") is not None and d.get("era5_v850") is not None:
-                d["era5_wind_speed850"] = float(np.sqrt(d["era5_u850"]**2 + d["era5_v850"]**2))
+            if "era5_wind_speed850" in feature_cols and d.get("era5_wind_speed850") is None:
+                if d.get("era5_u850") is not None and d.get("era5_v850") is not None:
+                    d["era5_wind_speed850"] = float(np.sqrt(d["era5_u850"]**2 + d["era5_v850"]**2))
 
-        rows.append(d)
+            rows.append(d)
 
-    df_in = pd.DataFrame(rows)
+        df_in = pd.DataFrame(rows)
 
-    if era5_imputed:
-        warnings_list.append(
-            "ERA5 atmospheric reanalysis features were omitted in request; "
-            "imputed using mean monsoon climatological state."
-        )
+        if era5_imputed:
+            warnings_list.append(
+                "ERA5 atmospheric reanalysis features were omitted in request; "
+                "imputed using mean monsoon climatological state."
+            )
 
-    missing_cols = [c for c in feature_cols if c not in df_in.columns or df_in[c].isna().any()]
-    if missing_cols:
+        missing_cols = [c for c in feature_cols if c not in df_in.columns or df_in[c].isna().any()]
+        if missing_cols:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Missing required meteorological predictors: {missing_cols}."
+            )
+
+        q_reg = models["quantile_regressor"]
+        q_preds = q_reg.predict_quantiles(df_in)
+
+        out_dict = {}
+        for q_val, arr in q_preds.items():
+            out_dict[f"q_{int(q_val*100):02d}"] = [round(float(x), 2) for x in arr]
+
+        return QuantileResponse(quantiles=out_dict, warnings=warnings_list if warnings_list else None)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Inference error in predict_rainfall_quantiles: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Missing required meteorological predictors: {missing_cols}."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Inference error: {type(e).__name__}: {str(e)}"
         )
-
-    q_reg = models["quantile_regressor"]
-    q_preds = q_reg.predict_quantiles(df_in)
-
-    out_dict = {}
-    for q_val, arr in q_preds.items():
-        out_dict[f"q_{int(q_val*100):02d}"] = [round(float(x), 2) for x in arr]
-
-    return QuantileResponse(quantiles=out_dict, warnings=warnings_list if warnings_list else None)
