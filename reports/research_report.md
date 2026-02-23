@@ -62,6 +62,12 @@ This study investigates five core research questions:
 2. Purely antecedent rainfall features do not account for offshore convective genesis over the Bay of Bengal without reanalysis or radar ingestion.
 3. Class imbalance: Events $\ge 50$ mm/day account for $< 3\%$ of total observations.
 
+### 5.3 Operational Forecast vs. Retrospective Diagnostic Taxonomy
+To avoid claiming real-time forecast skill on retrospective variables, we enforce three distinct experimental paradigms:
+- **Mode 1 (Operational Day-Ahead Forecast):** Antecedent IMD rainfall only. Uses strictly past observations $R(\le t)$ available at morning issue time $t$ to forecast $R(t+1)$.
+- **Mode 2 (Operational NWP Post-Processing):** Ingests dynamical weather forecasts (IMD GFS or ECMWF TIGGE) initialized prior to issue time ($t_{\text{init}} \le t$, lead $\ge 24\text{h}$).
+- **Mode 3 (Retrospective Diagnostic Association):** Coupled ERA5 reanalysis variables. Analyzes physical atmospheric sensitivity offline; **not an operational real-time forecast** due to observation assimilation latency.
+
 ---
 
 ## 6. Experimental Methodology & Validation Setup

@@ -24,7 +24,13 @@ The Indian Summer Monsoon (June–September; JJAS) delivers over 75% of India's 
 1. **Prevents Future Leakage:** Enforces strict chronological year-based partitioning (Train $\le 2018$, Val 2019–2020, Test 2021–2023) and strictly backward-shifted rolling windows.
 2. **Combines Diverse Priors:** Evaluates seasonal climatology, persistence, regularized GLMs, Random Forests, XGBoost, and deep neural networks.
 3. **Optimizes Calibration:** Fits non-negative ensemble weights and probability calibrators (Platt scaling and Isotonic regression) strictly on validation data to mitigate extreme-event overconfidence.
-4. **Quantifies Epistemic & Aleatoric Uncertainty:** Provides ensemble member spread, disagreement entropy, and conditional rainfall prediction intervals via gradient-boosted quantile regression.
+4. **Quantifies Uncertainty:** Provides empirical ensemble member spread, disagreement entropy, and conditional rainfall prediction intervals via gradient-boosted quantile regression.
+
+### Experimental Modes & Causal Predictor Availability
+To preserve scientific validity, MonsoonCast establishes a strict taxonomy of experimental modes:
+* **Mode 1: Operational Day-Ahead Forecast (Rainfall-History Only):** Uses strictly antecedent rainfall observations available before simulated issue time $t$ (lags, rolling multi-day windows, and training climatology) to predict day $t+1$. Fully causal and operationally realizable in real time.
+* **Mode 2: Operational NWP Forecast Ingestion (IMD GFS / ECMWF TIGGE):** Ingests numerical weather prediction model ensemble forecasts initialized prior to forecast issue time ($t_{\text{init}} \le t$, lead $\ge 24\text{h}$) via `ForecastEnsembleAdapter`.
+* **Mode 3: Retrospective Diagnostic Association (ERA5 Reanalysis):** Offline physical diagnostic experiment coupling same-day atmospheric thermodynamic state variables (TCWV, MSLP, winds) to evaluate precipitation sensitivity. **Explicitly classified as retrospective diagnostic analysis**, not an operational day-ahead forecast, due to reanalysis data assimilation latency.
 
 ---
 

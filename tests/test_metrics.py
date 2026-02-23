@@ -3,6 +3,7 @@
 import numpy as np
 
 from monsooncast.evaluation.metrics import (
+    bootstrap_metric_ci,
     compute_meteorological_metrics,
     compute_probabilistic_metrics,
     compute_rainfall_amount_metrics,
@@ -84,4 +85,52 @@ def test_find_optimal_threshold():
     best_thresh, best_csi = find_optimal_threshold(y_true, y_prob, metric="csi")
     assert 0.29 <= best_thresh <= 0.65
     assert best_csi == 1.0  # Perfect separation achieved between max negative (0.30) and min positive (0.65)
+
+
+def test_spatial_date_block_bootstrap_toy_dataset():
+    """Verify Spatial-Date Block Bootstrap confidence interval on a known toy dataset."""
+    # 5 dates with 3 spatial grid cells per date = 15 total observations
+    dates = np.array([
+        "2021-07-01", "2021-07-01", "2021-07-01",
+        "2021-07-02", "2021-07-02", "2021-07-02",
+        "2021-07-03", "2021-07-03", "2021-07-03",
+        "2021-07-04", "2021-07-04", "2021-07-04",
+        "2021-07-05", "2021-07-05", "2021-07-05",
+    ])
+    y_true = np.array([
+        1, 1, 0,
+        0, 0, 0,
+        1, 1, 1,
+        0, 0, 1,
+        1, 0, 0
+    ])
+    y_prob = np.array([
+        0.8, 0.7, 0.2,
+        0.1, 0.2, 0.1,
+        0.9, 0.8, 0.85,
+        # On day 4, add an error: true=1, prob=0.2 (false negative)
+        0.3, 0.1, 0.2,
+        0.65, 0.2, 0.8  # On day 5, true=0, prob=0.8 (false positive)
+    ])
+
+    def accuracy_func(yt, yp):
+        return float(np.mean(yt == (yp >= 0.5)))
+
+    expected_point = accuracy_func(y_true, y_prob)
+
+    low, point, high = bootstrap_metric_ci(
+        y_true=y_true,
+        y_prob=y_prob,
+        metric_func=accuracy_func,
+        dates=dates,
+        block_size_days=2,
+        n_bootstrap=100,
+        alpha=0.05,
+        seed=42,
+    )
+
+    assert np.isclose(point, round(expected_point, 4), atol=1e-4)
+    assert 0.0 <= low <= point <= high <= 1.0
+    assert high - low > 0.0  # Non-zero variance across resampled synoptic blocks
+
 
