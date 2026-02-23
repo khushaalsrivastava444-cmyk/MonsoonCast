@@ -20,7 +20,7 @@ logger = logging.getLogger("monsooncast_api")
 
 app = FastAPI(
     title="MonsoonCast API",
-    description="An independent machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
+    description="A machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
     version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -121,7 +121,7 @@ def root():
     """Root welcome endpoint providing links to documentation and system status."""
     return {
         "project": "MonsoonCast API",
-        "description": "An independent machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
+        "description": "A machine learning API for extreme monsoon rainfall prediction, probabilistic calibration, and uncertainty quantification over India.",
         "version": "0.3.0",
         "docs_url": "/docs",
         "health_url": "/health",

@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use MonsoonCast in your research or project, please cite it as below."
-title: "MonsoonCast: An Independent Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India"
-abstract: "An independent machine learning framework exploring extreme monsoon rainfall prediction, ensemble modelling and probabilistic uncertainty estimation over India."
+title: "MonsoonCast: A Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India"
+abstract: "A machine learning framework exploring extreme monsoon rainfall prediction, ensemble modelling and probabilistic uncertainty estimation over India."
 authors:
   - family-names: "Srivastava"
     given-names: "Khushaal"

@@ -1,7 +1,7 @@
 <div align="center">
 
 # MonsoonCast 🌧️
-### An Independent Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India
+### A Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -16,7 +16,7 @@
 
 ## 1. Project Overview
 
-> **MonsoonCast is an independent machine learning project exploring extreme monsoon rainfall prediction and probabilistic uncertainty estimation over India. It investigates how historical rainfall observations and atmospheric variables can be processed and used with machine learning models and ensemble techniques to estimate the likelihood of extreme rainfall events.**
+> **MonsoonCast is a machine learning project exploring extreme monsoon rainfall prediction and probabilistic uncertainty estimation over India. It investigates how historical rainfall observations and atmospheric variables can be processed and used with machine learning models and ensemble techniques to estimate the likelihood of extreme rainfall events.**
 
 The framework focuses on the **Central India Core Monsoon Zone** (18.0°–25.0°N, 73.0°–82.0°E) during the Indian Summer Monsoon season (June–September; JJAS). It implements an end-to-end, leak-free machine learning workflow:
 - **Strict Chronological Data Splitting:** Isolates training ($\le 2018$), validation (2019–2020), and test partitions (2021–2023) to eliminate temporal lookahead.
@@ -188,7 +188,7 @@ At simulated issue date $t$, the feature pipeline generates 20 meteorological pr
 4. **Random Forest Classifier:** Ensemble of 100 decision trees (max depth 8) with balanced class weights to penalize minority-class false negatives.
 5. **XGBoost Classifier:** Gradient-boosted trees optimized with `scale_pos_weight=5.0` to balance recall and precision on rare extremes.
 6. **PyTorch Tabular MLP:** Neural network architecture with batch normalization, ReLU activations, and Monte Carlo Dropout for epistemic uncertainty sampling.
-7. **XGBoost Quantile Regressors:** Independent gradient-boosted trees trained under the asymmetric pinball loss at $\alpha \in \{0.10, 0.50, 0.90\}$ to output continuous prediction intervals.
+7. **XGBoost Quantile Regressors:** Separate gradient-boosted trees trained under the asymmetric pinball loss at $\alpha \in \{0.10, 0.50, 0.90\}$ to output continuous prediction intervals.
 
 ---
 
@@ -455,7 +455,7 @@ If you find MonsoonCast useful in your research or personal projects, please cit
 ```bibtex
 @software{srivastava2026monsooncast,
   author       = {Khushaal Srivastava},
-  title        = {{MonsoonCast: An Independent Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India}},
+  title        = {{MonsoonCast: A Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India}},
   month        = feb,
   year         = 2026,
   version      = {0.3.0},

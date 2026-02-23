@@ -1,6 +1,6 @@
 """MonsoonCast: Interactive Machine Learning Dashboard.
 
-An independent ML framework exploring extreme monsoon rainfall prediction, ensemble modelling, and uncertainty estimation over India.
+A machine learning framework exploring extreme monsoon rainfall prediction, ensemble modelling, and uncertainty estimation over India.
 """
 
 import json
@@ -50,13 +50,13 @@ st.markdown("""
 
 st.markdown('<div class="main-header">MonsoonCast: Extreme Monsoon Rainfall ML Framework</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">An Independent Machine Learning Project for Extreme Rainfall Prediction and Uncertainty Estimation over India</div>',
+    '<div class="sub-header">A Machine Learning Project for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India</div>',
     unsafe_allow_html=True
 )
 
 st.markdown("""
 <div class="callout">
-<b>Project Overview:</b> MonsoonCast is an independent machine learning project exploring extreme monsoon rainfall prediction and probabilistic uncertainty estimation over India. It investigates how historical rainfall observations and atmospheric variables can be processed and used with machine learning models and ensemble techniques to estimate the likelihood of extreme rainfall events.
+<b>Project Overview:</b> MonsoonCast is a machine learning project exploring extreme monsoon rainfall prediction and probabilistic uncertainty estimation over India. It investigates how historical rainfall observations and atmospheric variables can be processed and used with machine learning models and ensemble techniques to estimate the likelihood of extreme rainfall events.
 </div>
 """, unsafe_allow_html=True)
 

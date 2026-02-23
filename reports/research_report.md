@@ -1,7 +1,7 @@
-# MonsoonCast: An Independent Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India
+# MonsoonCast: A Machine Learning Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Estimation over India
 
 **Author:** Khushaal Srivastava  
-**Project:** MonsoonCast (Independent Machine Learning Project)  
+**Project:** MonsoonCast (Machine Learning Project)  
 **Release Date:** February 23, 2026  
 **Document Status:** Technical Evaluation & Benchmark Report  
 
@@ -9,7 +9,7 @@
 
 ## 1. Abstract
 
-Extreme precipitation events during the Indian Summer Monsoon (June through September; JJAS) present severe risks to human life, urban infrastructure, and agrarian economies. Numerical Weather Prediction (NWP) models frequently suffer from convective parameterization biases and spatial displacement errors when resolving localized extreme downpours ($\ge 50$ mm/day). In this work, we present **MonsoonCast**, an independent, modular, and reproducible machine learning ensemble framework designed for extreme monsoon precipitation forecasting and predictive uncertainty quantification over Central India (18.0°–25.0°N, 73.0°–82.0°E). 
+Extreme precipitation events during the Indian Summer Monsoon (June through September; JJAS) present severe risks to human life, urban infrastructure, and agrarian economies. Numerical Weather Prediction (NWP) models frequently suffer from convective parameterization biases and spatial displacement errors when resolving localized extreme downpours ($\ge 50$ mm/day). In this work, we present **MonsoonCast**, a modular and reproducible machine learning ensemble framework designed for extreme monsoon precipitation forecasting and predictive uncertainty quantification over Central India (18.0°–25.0°N, 73.0°–82.0°E). 
 
 To ensure scientific validity, the framework enforces strict chronological partitioning (Train: 2010–2018, Validation: 2019–2020, Test: 2021–2023), eliminating forward temporal look-ahead and target leakage. We evaluate seasonal climatology, lag persistence, penalized logistic regression, cost-sensitive Random Forests, and gradient-boosted decision trees (XGBoost) against a constrained, validation-optimized probabilistic ensemble with post-hoc isotonic calibration. Experimental results demonstrate that ensembling substantially outperforms individual estimators on probability discrimination (PR-AUC), Brier Skill Score (BSS) relative to climatology, and Expected Calibration Error (ECE). Furthermore, we quantify epistemic uncertainty using inter-model spread and estimate continuous conditional precipitation prediction intervals via gradient-boosted quantile regression.
 
