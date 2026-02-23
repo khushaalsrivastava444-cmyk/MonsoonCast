@@ -72,6 +72,7 @@ data/processed/*
 !data/processed/test.parquet
 
 # Trained model binaries and checkpoints
+artifacts/models/*.joblib
 artifacts/models/*.pt
 artifacts/models/*.bin
 !artifacts/README.md

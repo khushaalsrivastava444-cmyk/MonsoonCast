@@ -48,11 +48,18 @@ def get_models():
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="MonsoonCast model artifacts not found. Please train models first using 'python scripts/train.py'."
             )
-        logger.info(f"Loading models from {MODEL_PATH} into API cache...")
-        payload = joblib.load(MODEL_PATH)
-        MODEL_CACHE["payload"] = payload
-        MODEL_CACHE["models"] = payload["models"]
-        MODEL_CACHE["feature_cols"] = payload["feature_cols"]
+        try:
+            logger.info(f"Loading models from {MODEL_PATH} into API cache...")
+            payload = joblib.load(MODEL_PATH)
+            MODEL_CACHE["payload"] = payload
+            MODEL_CACHE["models"] = payload["models"]
+            MODEL_CACHE["feature_cols"] = payload["feature_cols"]
+        except Exception as e:
+            logger.error(f"Failed to load models from {MODEL_PATH}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to load model artifacts: {type(e).__name__}: {str(e)}"
+            )
     return MODEL_CACHE["models"], MODEL_CACHE["feature_cols"]
 
 

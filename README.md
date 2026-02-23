@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release: v0.3.0](https://img.shields.io/badge/release-v0.3.0-orange.svg)](CITATION.cff)
 [![CI Status](https://img.shields.io/badge/tests-28%20passed-brightgreen.svg)](tests/)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg)](http://localhost:8000/docs)
+[![FastAPI](https://img.shields.io/badge/API-Live%20on%20Render-009688.svg)](https://monsooncast-api.onrender.com/docs)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://monsooncast-popwidywnbpu3rgwkn5skh.streamlit.app/)
 
 </div>
@@ -363,12 +363,14 @@ Open `http://localhost:8501` to explore:
 - **Model Comparison:** Interactive metric tables, ROC/PR curves, predictor importance, and sensitivity analyses.
 - **Uncertainty Analysis:** Reliability diagrams, Expected Calibration Error (ECE), and quantile prediction intervals.
 
-### 15.3 Running the Programmatic FastAPI Service
+### 15.3 Programmatic FastAPI Service
 
+- **Live Cloud Endpoint:** [monsooncast-api.onrender.com/docs](https://monsooncast-api.onrender.com/docs)
+- **Run locally:**
 ```bash
 uvicorn api.main:app --reload --port 8000
 ```
-Interactive OpenAPI documentation is available at `http://localhost:8000/docs`.
+Interactive OpenAPI documentation is available at `http://localhost:8000/docs` (or `/docs` on the live hosted URL).
 
 **Example Prediction Request:**
 ```bash
