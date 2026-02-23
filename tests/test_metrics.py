@@ -72,3 +72,16 @@ def test_prediction_interval_coverage():
 
     res = compute_rainfall_amount_metrics(y_true, y_pred, y_lower=y_lower, y_upper=y_upper)
     assert res["picp"] == 0.75
+
+
+def test_find_optimal_threshold():
+    """Verify threshold optimization finds decision threshold maximizing CSI on sample predictions."""
+    from monsooncast.evaluation.metrics import find_optimal_threshold
+
+    y_true = np.array([0, 0, 1, 1, 0, 1, 0, 0, 1, 0])
+    y_prob = np.array([0.05, 0.1, 0.7, 0.8, 0.15, 0.9, 0.2, 0.05, 0.65, 0.3])
+
+    best_thresh, best_csi = find_optimal_threshold(y_true, y_prob, metric="csi")
+    assert 0.29 <= best_thresh <= 0.65
+    assert best_csi == 1.0  # Perfect separation achieved between max negative (0.30) and min positive (0.65)
+

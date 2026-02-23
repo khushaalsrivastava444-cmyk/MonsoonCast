@@ -1,0 +1,88 @@
+{
+  "threshold_sensitivity": {
+    "35.5": {
+      "label": "35.5 (Rather Heavy)",
+      "threshold_mm": 35.5,
+      "event_prevalence_pct": 4.23,
+      "eval_operating_threshold": 0.042,
+      "pr_auc": 0.1163,
+      "roc_auc": 0.7602,
+      "pod": 0.424,
+      "far": 0.871,
+      "csi": 0.11,
+      "brier_score": 0.0397,
+      "ece": 0.0236
+    },
+    "50.0": {
+      "label": "50.0 (Heavy)",
+      "threshold_mm": 50.0,
+      "event_prevalence_pct": 1.74,
+      "eval_operating_threshold": 0.058,
+      "pr_auc": 0.0603,
+      "roc_auc": 0.7901,
+      "pod": 0.385,
+      "far": 0.927,
+      "csi": 0.065,
+      "brier_score": 0.0167,
+      "ece": 0.0014
+    },
+    "64.5": {
+      "label": "64.5 (Very Heavy)",
+      "threshold_mm": 64.5,
+      "event_prevalence_pct": 0.8,
+      "eval_operating_threshold": 0.074,
+      "pr_auc": 0.0338,
+      "roc_auc": 0.8083,
+      "pod": 0.194,
+      "far": 0.946,
+      "csi": 0.044,
+      "brier_score": 0.0081,
+      "ece": 0.0107
+    },
+    "100.0": {
+      "label": "100.0 (Extremely Heavy)",
+      "threshold_mm": 100.0,
+      "event_prevalence_pct": 0.11,
+      "eval_operating_threshold": 0.074,
+      "pr_auc": 0.0092,
+      "roc_auc": 0.8884,
+      "pod": 0.291,
+      "far": 0.989,
+      "csi": 0.011,
+      "brier_score": 0.0019,
+      "ece": 0.0176
+    }
+  },
+  "subregion_sensitivity": {
+    "Western Sector (73-76E)": {
+      "n_samples": 32850,
+      "event_prevalence_pct": 3.86,
+      "csi": 0.075,
+      "pod": 0.517,
+      "far": 0.919,
+      "pr_auc": 0.0795,
+      "roc_auc": 0.7246,
+      "ece": 0.006
+    },
+    "Central Core (76-79E)": {
+      "n_samples": 32850,
+      "event_prevalence_pct": 0.98,
+      "csi": 0.022,
+      "pod": 0.105,
+      "far": 0.973,
+      "pr_auc": 0.0198,
+      "roc_auc": 0.7189,
+      "ece": 0.0051
+    },
+    "Eastern Sector (79-82E)": {
+      "n_samples": 38325,
+      "event_prevalence_pct": 0.57,
+      "csi": 0.02,
+      "pod": 0.041,
+      "far": 0.962,
+      "pr_auc": 0.0131,
+      "roc_auc": 0.7309,
+      "ece": 0.0042
+    }
+  }
+}

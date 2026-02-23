@@ -103,3 +103,70 @@ with col_b:
     - **Random Forest & XGBoost:** Strong discriminatory power (high PR-AUC), but raw probabilities often require calibration.
     - **Calibrated Ensemble:** Achieves optimal Brier Skill Score (BSS) and lowest Expected Calibration Error (ECE), proving ensembling improves probabilistic forecast quality.
     """)
+
+# Section 4: Feature Importance & Sensitivity
+st.markdown("---")
+st.subheader("4. Meteorological Predictor Importance & Sensitivity Analysis")
+
+feat_path = Path("artifacts/metrics/feature_importance.json")
+sens_path = Path("artifacts/metrics/sensitivity_analysis.json")
+
+tab_feat, tab_sens = st.tabs(["Meteorological Predictor Importance", "Threshold & Regional Sensitivity"])
+
+with tab_feat:
+    if feat_path.exists():
+        with open(feat_path, "r") as f:
+            feat_data = json.load(f)
+        if "permutation_importance" in feat_data:
+            p_imp = feat_data["permutation_importance"]
+            df_feat = pd.DataFrame([
+                {"Predictor": k, "Permutation Drop in AUC": v["mean_delta_auc"], "Std": v["std_delta_auc"]}
+                for k, v in p_imp.items()
+            ]).sort_values("Permutation Drop in AUC", ascending=False)
+
+            fig_feat = px.bar(
+                df_feat.head(12),
+                x="Permutation Drop in AUC",
+                y="Predictor",
+                orientation="h",
+                title="Top Predictors by Permutation Importance (Test Set)",
+                color="Permutation Drop in AUC",
+                color_continuous_scale="Blues"
+            )
+            fig_feat.update_layout(yaxis=dict(autorange="reversed"), template="plotly_white")
+            st.plotly_chart(fig_feat, use_container_width=True)
+    else:
+        st.info("Run 'python scripts/analyze_feature_importance.py' to generate feature importance.")
+
+with tab_sens:
+    if sens_path.exists():
+        with open(sens_path, "r") as f:
+            sens_data = json.load(f)
+        t_data = sens_data.get("threshold_sensitivity", {})
+        if t_data:
+            df_t = pd.DataFrame([
+                {
+                    "Threshold (mm/day)": v["threshold_mm"],
+                    "Classification": v["label"],
+                    "Prevalence (%)": v["event_prevalence_pct"],
+                    "ROC-AUC": v["roc_auc"],
+                    "CSI": v["csi"],
+                    "ECE": v["ece"]
+                }
+                for v in t_data.values()
+            ])
+            st.markdown("#### Rainfall Threshold Sensitivity (IMD Categories)")
+            st.dataframe(df_t, use_container_width=True)
+
+            fig_t = px.line(
+                df_t,
+                x="Threshold (mm/day)",
+                y=["ROC-AUC", "CSI"],
+                markers=True,
+                title="Model Performance Across Extreme Rainfall Thresholds"
+            )
+            fig_t.update_layout(template="plotly_white")
+            st.plotly_chart(fig_t, use_container_width=True)
+    else:
+        st.info("Run 'python scripts/sensitivity_analysis.py' to generate sensitivity analysis.")
+
