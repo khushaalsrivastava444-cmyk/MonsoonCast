@@ -108,14 +108,54 @@ python scripts/train.py --config configs/baseline.yaml
 python scripts/evaluate.py
 ```
 
-### Run All Steps in One Command:
+### Step 5: Meteorological Interpretability & Sensitivity Analysis
 ```bash
-python scripts/run_experiment.py --config configs/baseline.yaml
+python scripts/analyze_feature_importance.py
+python scripts/sensitivity_analysis.py
+```
+
+### Step 6: Generate Publication-Quality Scientific Figures
+```bash
+python scripts/generate_figures.py
+```
+
+### Run End-to-End Experiment Pipeline:
+```bash
+python scripts/run_experiment.py --config configs/reanalysis.yaml
 ```
 
 ---
 
-## 5. Interactive Research Dashboard
+## 5. Quantitative Benchmark Results
+
+Evaluated on held-out test seasons (2021–2023; $N = 104,025$ grid-day instances; extreme event frequency = $1.74\%$). Operational decision threshold tuned strictly on the validation partition to eliminate data leakage:
+
+| Model Architecture | PR-AUC | ROC-AUC | POD (Recall) | FAR (False Alarm) | CSI [95% CI] | BSS (vs Clim) | ECE |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Seasonal Climatology** | 0.0457 | 0.6144 | 0.344 | 0.952 | 0.044 [0.04–0.05] | +0.000 (Ref) | 0.022 |
+| **Lag-1 Persistence** | 0.0673 | 0.5212 | 0.059 | 0.941 | 0.030 [0.02–0.04] | +0.067 | 0.001 |
+| **Logistic Regression** | 0.0654 | 0.7950 | 0.311 | 0.920 | 0.068 [0.06–0.07] | -9.402 | 0.360 |
+| **Random Forest** | 0.0616 | 0.7860 | 0.327 | 0.924 | 0.066 [0.06–0.07] | -8.125 | 0.333 |
+| **XGBoost Classifier** | 0.0646 | 0.7913 | 0.356 | 0.924 | 0.067 [0.06–0.07] | -0.259 | 0.056 |
+| **PyTorch Tabular MLP** | 0.0656 | 0.7948 | 0.300 | 0.921 | 0.067 [0.06–0.07] | -9.900 | 0.361 |
+| **Calibrated Ensemble** | **0.0648** | **0.7901** | **0.385** | **0.927** | **0.065 [0.06–0.07]** | **+0.088** | **0.001** |
+
+---
+
+## 6. Publication Figures
+
+Seven publication-quality scientific figures are automatically generated in `reports/figures/`:
+1. `fig1_study_domain_climatology.png`: Spatial domain map & intra-seasonal progression.
+2. `fig2_model_pr_roc_curves.png`: Precision-Recall & ROC curves.
+3. `fig3_reliability_diagrams.png`: Reliability diagrams & Expected Calibration Error (ECE).
+4. `fig4_prediction_intervals.png`: Quantile regression conditional prediction intervals.
+5. `fig5_spatial_forecast_uncertainty.png`: Calibrated event probability & inter-model spread $\sigma$.
+6. `fig6_feature_importance.png`: Permutation feature importance & XGBoost information gain.
+7. `fig7_threshold_subregion_sensitivity.png`: Operational threshold response and sub-regional verification.
+
+---
+
+## 7. Interactive Research Dashboard
 
 Launch the Streamlit analytical dashboard:
 ```bash
@@ -124,12 +164,12 @@ streamlit run app/streamlit_app.py
 
 ### Pages Included:
 - **1. Rainfall Explorer:** Spatio-temporal rainfall distributions, seasonal progression, and interactive density map of Central India.
-- **2. Model Comparison:** Side-by-side verification table (PR-AUC, ROC-AUC, POD, FAR, CSI, BSS, ECE).
+- **2. Model Comparison:** Side-by-side verification table (PR-AUC, ROC-AUC, POD, FAR, CSI, BSS, ECE), plus meteorological predictor importance and sensitivity analysis tabs.
 - **3. Uncertainty Analysis:** Reliability curves, expected calibration error (ECE), and quantile interval coverage (PICP).
 
 ---
 
-## 6. Programmatic REST API
+## 8. Programmatic REST API
 
 Launch the FastAPI service:
 ```bash
@@ -146,7 +186,7 @@ Interactive OpenAPI documentation is available at `http://localhost:8000/docs`.
 
 ---
 
-## 7. Automated Testing Suite
+## 9. Automated Testing Suite
 
 Execute the full unit, integration, and leakage test suite:
 ```bash
@@ -155,7 +195,7 @@ pytest tests/ -v
 
 ---
 
-## 8. Citation & Attribution
+## 10. Citation & Attribution
 
 If you use MonsoonCast in your academic research, please cite:
 
@@ -165,13 +205,13 @@ If you use MonsoonCast in your academic research, please cite:
   title        = {{MonsoonCast: A Research-Grade AI Ensemble Framework for Extreme Monsoon Rainfall Prediction and Uncertainty Quantification over India}},
   month        = feb,
   year         = 2026,
-  version      = {0.1.0},
+  version      = {0.3.0},
   url          = {https://github.com/khushaalsrivastava/MonsoonCast}
 }
 ```
 
 ---
 
-## 9. License
+## 11. License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
